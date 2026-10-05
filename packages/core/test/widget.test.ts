@@ -102,3 +102,73 @@ describe("<derivative-widget>", () => {
     await vi.waitFor(() => expect(shadow(el).textContent).toContain("could not be loaded"));
   });
 });
+
+describe("types and announce", () => {
+  const titled: Feed = createFeed(
+    [
+      {
+        id: "3.0.0",
+        version: "3.0.0",
+        date: "2026-10-04",
+        title: "Dark mode is here",
+        summary: "Switch in **settings**.",
+        entries: [
+          { type: "feature", text: "Dark mode" },
+          { type: "fix", text: "Typo" },
+        ],
+      },
+      {
+        id: "2.9.1",
+        version: "2.9.1",
+        date: "2026-10-02",
+        entries: [{ type: "fix", text: "Crash" }],
+      },
+    ],
+    { generatedAt: null },
+  );
+
+  it("shows only the listed entry types and drops empty releases", () => {
+    const el = mount({ types: "feature" });
+    el.feed = titled;
+    el.show();
+    const list = shadow(el).querySelector(".list") as HTMLElement;
+    expect(list.textContent).toContain("Dark mode");
+    expect(list.textContent).not.toContain("Typo");
+    expect(list.querySelectorAll(".dv-release")).toHaveLength(1);
+    expect(list.querySelector("[data-unread]")).not.toBeNull();
+  });
+
+  it("announces a new titled release once", () => {
+    const announced = vi.fn();
+    const el = mount({ announce: "", lang: "de" });
+    el.addEventListener("derivative-announce", announced);
+    el.feed = titled;
+    const toast = shadow(el).querySelector(".toast") as HTMLElement;
+    expect(toast.textContent).toContain("Dark mode is here");
+    expect(toast.innerHTML).toContain("<strong>settings</strong>");
+    expect(announced).toHaveBeenCalledOnce();
+
+    (shadow(el).querySelector(".toast-dismiss") as HTMLButtonElement).click();
+    expect(shadow(el).querySelector(".toast")).toBeNull();
+    // The badge stays: dismissing is not reading.
+    expect((shadow(el).querySelector(".badge") as HTMLElement).hidden).toBe(false);
+
+    const again = mount({ announce: "" });
+    again.feed = titled;
+    expect(shadow(again).querySelector(".toast")).toBeNull();
+  });
+
+  it("opens the panel from the toast", () => {
+    const el = mount({ announce: "" });
+    el.feed = titled;
+    (shadow(el).querySelector(".toast-show") as HTMLButtonElement).click();
+    expect(el.open).toBe(true);
+    expect(shadow(el).querySelector(".toast")).toBeNull();
+  });
+
+  it("does not announce without the attribute", () => {
+    const el = mount();
+    el.feed = titled;
+    expect(shadow(el).querySelector(".toast")).toBeNull();
+  });
+});

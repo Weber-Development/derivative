@@ -6,6 +6,10 @@ export interface Messages {
   unread: string;
   close: string;
   allChanges: string;
+  /** Toast button that opens the panel. */
+  show: string;
+  /** Toast button that hides it. */
+  dismiss: string;
   empty: string;
   error: string;
   unreleased: string;
@@ -18,6 +22,8 @@ export const messages = {
     unread: "{count} new",
     close: "Close",
     allChanges: "All changes",
+    show: "Show",
+    dismiss: "Dismiss",
     empty: "No updates yet.",
     error: "Updates could not be loaded.",
     unreleased: "Coming soon",
@@ -37,6 +43,8 @@ export const messages = {
     unread: "{count} neu",
     close: "Schliessen",
     allChanges: "Alle Änderungen",
+    show: "Ansehen",
+    dismiss: "Ausblenden",
     empty: "Noch keine Neuigkeiten.",
     error: "Neuigkeiten konnten nicht geladen werden.",
     unreleased: "Demnächst",
@@ -56,6 +64,8 @@ export const messages = {
     unread: "{count} nouveau(x)",
     close: "Fermer",
     allChanges: "Toutes les modifications",
+    show: "Voir",
+    dismiss: "Masquer",
     empty: "Aucune nouveauté pour le moment.",
     error: "Impossible de charger les nouveautés.",
     unreleased: "Bientôt",
@@ -75,6 +85,8 @@ export const messages = {
     unread: "{count} nuove",
     close: "Chiudi",
     allChanges: "Tutte le modifiche",
+    show: "Vedi",
+    dismiss: "Nascondi",
     empty: "Ancora nessuna novità.",
     error: "Impossibile caricare le novità.",
     unreleased: "In arrivo",

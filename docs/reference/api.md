@@ -11,6 +11,7 @@ Runs in browsers and Node.
 |---|---|
 | `parseChangelog(markdown, options?)` | Releases from a `CHANGELOG.md` (Changesets, Keep a Changelog, conventional-changelog) |
 | `parseCommits(commits, options?)` | Releases from conventional commits with tags |
+| `parseGitHubReleases(releases, options?)` | Releases from the GitHub Releases API response |
 | `createFeed(releases, options?)` | Sorts, merges, applies highlights and limit |
 | `parseFeed(json)` | Validates untrusted JSON |
 | `getUnread(feed, lastSeen, options?)` | Releases the reader hasn't seen |
@@ -31,6 +32,7 @@ Runs in browsers and Node.
 | `writeOutputs(feed, config, cwd?)` | Writes JSON, Atom and HTML |
 | `readGitCommits(cwd?, range?)` | Commits with tags, newest first |
 | `readTagDate(version, package?, cwd?)` | Date of a release tag |
+| `readGitHubReleases(repo, options?)` | Published releases from the GitHub API, newest first |
 | `loadConfig(path)` | Reads `derivative.config.json` |
 
 ## `@sweberdev/derivative/widget`

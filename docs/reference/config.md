@@ -25,7 +25,9 @@ description: derivative.config.json and CLI options.
 
 | Key | CLI | Default | Meaning |
 |---|---|---|---|
-| `source` | `--source` | `changelog` if the file exists, else `git` | Where releases come from |
+| `source` | `--source` | `changelog` if the file exists, else `github` if `repo` is set, else `git` | Where releases come from |
+| `repo` | `--repo` | | github: `owner/name`, uses `GITHUB_TOKEN` when set |
+| `includePrereleases` | `--prereleases` | `false` | github: keep pre-releases |
 | `changelog` | `--changelog` (repeatable) | `CHANGELOG.md` | One path or a list for monorepos |
 | `tagPattern` | `--tag-pattern` | tags containing a version | git: regular expression for release tags |
 | `types` | | `feat`, `fix`, `perf`, `security`, `deprecate`, `revert` | git: commit type → entry type |

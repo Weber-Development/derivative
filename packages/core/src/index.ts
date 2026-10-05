@@ -14,6 +14,11 @@ export {
   parseCommits,
   versionFromTag,
 } from "./parse/commits";
+export {
+  type GitHubRelease,
+  type ParseGitHubReleasesOptions,
+  parseGitHubReleases,
+} from "./parse/github";
 export { type ParseChangelogOptions, parseChangelog } from "./parse/markdown";
 export { type RenderOptions, renderAtom, renderPage, renderReleases } from "./render";
 export {

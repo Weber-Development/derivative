@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { parseChangelog, parseCommits, versionFromTag } from "../src";
+import { parseChangelog, parseCommits, parseGitHubReleases, versionFromTag } from "../src";
 
 const fixture = (name: string) => readFileSync(join(__dirname, "fixtures", name), "utf8");
 
@@ -106,5 +106,64 @@ describe("parseCommits", () => {
   it("extracts versions from tags", () => {
     expect(versionFromTag("v1.2.3")).toBe("1.2.3");
     expect(versionFromTag("@acme/app@2.0.0-beta.1")).toBe("2.0.0-beta.1");
+  });
+});
+
+describe("parseGitHubReleases", () => {
+  it("reads generated notes, hand-written notes and skips drafts", () => {
+    const releases = parseGitHubReleases([
+      { tag_name: "v2.0.0-beta.1", name: "v2.0.0-beta.1", body: "", prerelease: true },
+      { tag_name: "v1.3.0", draft: true, body: "* feat: Hidden" },
+      {
+        tag_name: "v1.2.0",
+        name: "Exports",
+        published_at: "2026-10-01T10:00:00Z",
+        html_url: "https://github.com/acme/app/releases/tag/v1.2.0",
+        body: [
+          "## What's Changed",
+          "* feat(export): add CSV export by @octocat in https://github.com/acme/app/pull/12",
+          "* fix: crash on empty list by @dependabot[bot] in https://github.com/acme/app/pull/13",
+          "* Update README by @octocat in https://github.com/acme/app/pull/14",
+          "",
+          "## New Contributors",
+          "* @octocat made their first contribution in https://github.com/acme/app/pull/12",
+          "",
+          "**Full Changelog**: https://github.com/acme/app/compare/v1.1.0...v1.2.0",
+        ].join("\n"),
+      },
+      {
+        tag_name: "v1.1.0",
+        name: "v1.1.0",
+        published_at: "2026-09-01T10:00:00Z",
+        body: "### Features\n\n- Faster search\n\n### Bug Fixes\n\n- Login on Safari",
+      },
+    ]);
+    expect(releases.map((r) => r.id)).toEqual(["1.2.0", "1.1.0"]);
+    const [first, second] = releases;
+    expect(first?.title).toBe("Exports");
+    expect(first?.date).toBe("2026-10-01T10:00:00Z");
+    expect(first?.entries).toEqual([
+      {
+        type: "feature",
+        scope: "export",
+        text: "Add CSV export",
+        link: "https://github.com/acme/app/pull/12",
+      },
+      { type: "fix", text: "Crash on empty list", link: "https://github.com/acme/app/pull/13" },
+      { type: "other", text: "Update README", link: "https://github.com/acme/app/pull/14" },
+    ]);
+    expect(second?.title).toBeUndefined();
+    expect(second?.entries.map((e) => [e.type, e.text])).toEqual([
+      ["feature", "Faster search"],
+      ["fix", "Login on Safari"],
+    ]);
+  });
+
+  it("includes pre-releases on request", () => {
+    const releases = parseGitHubReleases(
+      [{ tag_name: "v2.0.0-beta.1", body: "- Try it", prerelease: true }],
+      { includePrereleases: true },
+    );
+    expect(releases[0]?.version).toBe("2.0.0-beta.1");
   });
 });

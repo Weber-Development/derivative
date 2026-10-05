@@ -4,6 +4,7 @@ import { dirname, resolve } from "node:path";
 import { promisify } from "node:util";
 import { createFeed } from "./feed";
 import { type Commit, parseCommits } from "./parse/commits";
+import { type GitHubRelease, parseGitHubReleases } from "./parse/github";
 import { parseChangelog } from "./parse/markdown";
 import { renderAtom, renderPage } from "./render";
 import type { EntryType, Feed, Highlights, Release } from "./types";
@@ -11,8 +12,15 @@ import type { EntryType, Feed, Highlights, Release } from "./types";
 const run = promisify(execFile);
 
 export interface DerivativeConfig {
-  /** `changelog` reads CHANGELOG.md files, `git` reads conventional commits. Default `changelog` if a file exists, else `git`. */
-  source?: "changelog" | "git";
+  /**
+   * `changelog` reads CHANGELOG.md files, `git` reads conventional commits, `github` reads the
+   * releases of `repo` through the GitHub API. Default `changelog` if a file exists, else `git`.
+   */
+  source?: "changelog" | "git" | "github";
+  /** GitHub: `owner/name`. Uses the `GITHUB_TOKEN` environment variable when set. */
+  repo?: string;
+  /** GitHub: include pre-releases. */
+  includePrereleases?: boolean;
   /** One or more CHANGELOG.md paths (monorepos: one per package). Default `CHANGELOG.md`. */
   changelog?: string | string[];
   /** Git: only tags matching this regular expression start a release. */
@@ -75,6 +83,37 @@ export async function readTagDate(
   return undefined;
 }
 
+/** Reads published releases of a GitHub repository, newest first (up to 300). */
+export async function readGitHubReleases(
+  repo: string,
+  options: { token?: string; fetch?: typeof fetch; apiUrl?: string } = {},
+): Promise<GitHubRelease[]> {
+  if (!/^[\w.-]+\/[\w.-]+$/.test(repo))
+    throw new Error(`"${repo}" is not an owner/name repository.`);
+  const doFetch = options.fetch ?? fetch;
+  const token = options.token ?? process.env.GITHUB_TOKEN;
+  const api = options.apiUrl ?? "https://api.github.com";
+  const all: GitHubRelease[] = [];
+  for (let page = 1; page <= 3; page++) {
+    const response = await doFetch(`${api}/repos/${repo}/releases?per_page=100&page=${page}`, {
+      headers: {
+        accept: "application/vnd.github+json",
+        "user-agent": "derivative",
+        ...(token ? { authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    if (!response.ok) {
+      throw new Error(
+        `GitHub API ${response.status} for ${repo}${token ? "" : " (set GITHUB_TOKEN for private repositories)"}`,
+      );
+    }
+    const batch = (await response.json()) as GitHubRelease[];
+    all.push(...batch);
+    if (batch.length < 100) break;
+  }
+  return all;
+}
+
 async function exists(path: string): Promise<boolean> {
   try {
     await readFile(path);
@@ -88,7 +127,8 @@ async function exists(path: string): Promise<boolean> {
 export async function buildFeed(config: DerivativeConfig = {}, cwd = process.cwd()): Promise<Feed> {
   const files = [config.changelog ?? "CHANGELOG.md"].flat();
   const source =
-    config.source ?? ((await exists(resolve(cwd, files[0] ?? ""))) ? "changelog" : "git");
+    config.source ??
+    ((await exists(resolve(cwd, files[0] ?? ""))) ? "changelog" : config.repo ? "github" : "git");
   let releases: Release[] = [];
 
   if (source === "changelog") {
@@ -107,6 +147,11 @@ export async function buildFeed(config: DerivativeConfig = {}, cwd = process.cwd
     }
     // Single-package feeds don't need the package name on every release.
     if (files.length === 1) releases = releases.map(({ package: _, ...rest }) => rest);
+  } else if (source === "github") {
+    if (!config.repo) throw new Error('source "github" needs "repo", e.g. "acme/app".');
+    releases = parseGitHubReleases(await readGitHubReleases(config.repo), {
+      includePrereleases: config.includePrereleases,
+    });
   } else {
     const template = config.commitUrl;
     releases = parseCommits(await readGitCommits(cwd), {

@@ -1,4 +1,4 @@
-import type { Feed, Messages } from "@sweberdev/derivative";
+import type { EntryType, Feed, Messages } from "@sweberdev/derivative";
 import { type DerivativeWidget, defineDerivativeWidget } from "@sweberdev/derivative/widget/define";
 import { type CSSProperties, type ReactNode, useEffect, useRef } from "react";
 
@@ -17,6 +17,10 @@ export interface WhatsNewProps {
   label?: string;
   align?: "start" | "end";
   theme?: "light" | "dark";
+  /** Show only these entry types, e.g. `["feature", "fix"]`. */
+  types?: EntryType[];
+  /** Show a toast once when a new release with a title arrives. */
+  announce?: boolean;
   messages?: Partial<Messages>;
   className?: string;
   style?: CSSProperties;
@@ -66,6 +70,8 @@ export function WhatsNew(props: WhatsNewProps) {
       label={props.label}
       align={props.align}
       theme={props.theme}
+      types={props.types?.join(",")}
+      announce={props.announce ? "" : undefined}
       className={props.className}
       style={props.style}
     >
@@ -89,6 +95,8 @@ declare module "react" {
         label?: string;
         align?: string;
         theme?: string;
+        types?: string;
+        announce?: string;
       };
     }
   }

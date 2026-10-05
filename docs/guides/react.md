@@ -24,7 +24,7 @@ export function Header() {
 }
 ```
 
-Props match the [widget attributes](widget.md) in camelCase (`storageKey`), plus `feed`, `messages`, `icon`, `className`, `style`, `onOpen` and `onRead`.
+Props match the [widget attributes](widget.md) in camelCase (`storageKey`), with `types` as an array (`types={["feature", "fix"]}`) and `announce` as a boolean, plus `feed`, `messages`, `icon`, `className`, `style`, `onOpen` and `onRead`.
 
 ## useChangelog
 

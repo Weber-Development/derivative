@@ -1,9 +1,9 @@
 import { parseFeed } from "./feed";
 import { getMessages, type Messages } from "./i18n";
-import { escapeHtml } from "./markdown";
+import { escapeHtml, inlineMarkdown } from "./markdown";
 import { renderReleases } from "./render";
-import type { Feed } from "./types";
-import { createStore, getUnread, latestKey } from "./unread";
+import { ENTRY_TYPES, type Feed, type Release } from "./types";
+import { createStore, getUnread, latestKey, releaseKey } from "./unread";
 
 const Base = (typeof HTMLElement === "undefined" ? class {} : HTMLElement) as typeof HTMLElement;
 
@@ -14,11 +14,13 @@ let instances = 0;
  * and a panel listing the latest releases. Use `mode="inline"` to render the list in place.
  *
  * Attributes: `src`, `lang`, `mode` (`popover` | `inline`), `limit`, `storage-key`, `href`,
- * `label`, `align` (`start` | `end`). Events: `derivative-open`, `derivative-close`,
- * `derivative-read`, `derivative-load`, `derivative-error`.
+ * `label`, `align` (`start` | `end`), `types` (comma-separated entry types to show), `announce`
+ * (show a toast once for a new release with a title). Events: `derivative-open`,
+ * `derivative-close`, `derivative-read`, `derivative-load`, `derivative-error`,
+ * `derivative-announce`.
  */
 export class DerivativeWidget extends Base {
-  static observedAttributes = ["src", "lang", "mode", "limit", "label", "href", "align"];
+  static observedAttributes = ["src", "lang", "mode", "limit", "label", "href", "align", "types"];
 
   /** Override any UI text. */
   messages: Partial<Messages> | undefined;
@@ -29,6 +31,7 @@ export class DerivativeWidget extends Base {
   #root: ShadowRoot | undefined;
   #id = `dv-${++instances}`;
   #abort: AbortController | undefined;
+  #toast: Release | undefined;
 
   get feed(): Feed | undefined {
     return this.#feed;
@@ -38,6 +41,7 @@ export class DerivativeWidget extends Base {
   set feed(value: Feed | undefined) {
     this.#feed = value ? parseFeed(value) : undefined;
     this.#error = false;
+    this.#pickToast();
     this.#render();
   }
 
@@ -70,6 +74,7 @@ export class DerivativeWidget extends Base {
   show(): void {
     if (this.#open || this.#mode === "inline") return;
     this.#open = true;
+    this.#dismissToast();
     this.#render();
     this.#root?.querySelector<HTMLElement>(".panel")?.focus();
     this.#emit("derivative-open");
@@ -98,6 +103,41 @@ export class DerivativeWidget extends Base {
     this.#renderBadge();
   }
 
+  /** Hides the announcement toast and remembers it for this release. */
+  dismissToast(): void {
+    this.#dismissToast();
+    this.#render();
+  }
+
+  #dismissToast(): void {
+    if (!this.#toast) return;
+    this.#toastStore().set(releaseKey(this.#toast));
+    this.#toast = undefined;
+  }
+
+  #toastStore() {
+    return createStore(`${this.getAttribute("storage-key") ?? "derivative:last-seen"}:announced`);
+  }
+
+  /** The newest unread release with a title, unless it was announced already. */
+  #pickToast(): void {
+    this.#toast = undefined;
+    if (!this.#feed || !this.hasAttribute("announce") || this.#mode === "inline") return;
+    const release = getUnread(this.#feed, this.#store().get()).find((r) => r.title);
+    if (!release || this.#toastStore().get() === releaseKey(release)) return;
+    this.#toast = release;
+    this.#emit("derivative-announce", { release: releaseKey(release) });
+  }
+
+  get #types(): Set<string> | undefined {
+    const raw = this.getAttribute("types");
+    if (!raw) return undefined;
+    const set = new Set(
+      raw.split(/[\s,]+/).filter((t) => (ENTRY_TYPES as readonly string[]).includes(t)),
+    );
+    return set.size ? set : undefined;
+  }
+
   get #mode(): "popover" | "inline" {
     return this.getAttribute("mode") === "inline" ? "inline" : "popover";
   }
@@ -121,6 +161,7 @@ export class DerivativeWidget extends Base {
       if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
       this.#feed = parseFeed(await response.json());
       this.#error = false;
+      this.#pickToast();
       this.#emit("derivative-load", { feed: this.#feed });
     } catch (error) {
       if (abort.signal.aborted) return;
@@ -151,9 +192,15 @@ export class DerivativeWidget extends Base {
     if (this.#error) return `<p class="state">${escapeHtml(t.error)}</p>`;
     if (!this.#feed) return `<p class="state" aria-busy="true"></p>`;
     const limit = Number.parseInt(this.getAttribute("limit") ?? "", 10);
-    const releases = this.#feed.releases.slice(0, Number.isNaN(limit) ? 10 : limit);
+    const types = this.#types;
+    const filtered = types
+      ? this.#feed.releases
+          .map((r) => ({ ...r, entries: r.entries.filter((e) => types.has(e.type)) }))
+          .filter((r) => r.entries.length > 0 || r.title || r.summary)
+      : this.#feed.releases;
+    const releases = filtered.slice(0, Number.isNaN(limit) ? 10 : limit);
     if (releases.length === 0) return `<p class="state">${escapeHtml(t.empty)}</p>`;
-    const unread = new Set(getUnread(this.#feed, this.#store().get()));
+    const unread = new Set(getUnread(this.#feed, this.#store().get()).map(releaseKey));
     const html = renderReleases(releases, {
       lang: this.getAttribute("lang") ?? undefined,
       messages: this.messages,
@@ -163,8 +210,20 @@ export class DerivativeWidget extends Base {
     let index = 0;
     return html.replace(/<article class="dv-release"/g, (match) => {
       const release = releases[index++];
-      return release && unread.has(release) ? `${match} data-unread` : match;
+      return release && unread.has(releaseKey(release)) ? `${match} data-unread` : match;
     });
+  }
+
+  #toastHtml(t: Messages): string {
+    const release = this.#toast;
+    if (!release || this.#open) return "";
+    const summary = release.summary
+      ? `<p class="toast-text">${inlineMarkdown(release.summary.split(/\n\s*\n/)[0] ?? "")}</p>`
+      : "";
+    return `<div class="toast" part="toast" role="status" data-align="${this.getAttribute("align") === "start" ? "start" : "end"}">
+  <p class="toast-title"><span class="dv-type">${escapeHtml(t.types.feature)}</span> ${escapeHtml(release.title ?? "")}</p>${summary}
+  <div class="toast-actions"><button class="toast-show" type="button">${escapeHtml(t.show)}</button><button class="toast-dismiss" type="button" aria-label="${escapeHtml(t.dismiss)}">×</button></div>
+</div>`;
   }
 
   #renderBadge(): void {
@@ -202,9 +261,11 @@ export class DerivativeWidget extends Base {
   <header><h2>${escapeHtml(label)}</h2><button class="close" type="button" aria-label="${escapeHtml(t.close)}">×</button></header>
   <div class="list" part="list">${this.#open ? this.#listHtml() : ""}</div>
   ${footer}
-</section>`;
+</section>${this.#toastHtml(t)}`;
     root.querySelector(".trigger")?.addEventListener("click", () => this.toggle());
     root.querySelector(".close")?.addEventListener("click", () => this.hide());
+    root.querySelector(".toast-show")?.addEventListener("click", () => this.show());
+    root.querySelector(".toast-dismiss")?.addEventListener("click", () => this.dismissToast());
     root.querySelector(".panel")?.addEventListener("keydown", this.#onKeydown as EventListener);
     this.#renderBadge();
   }
@@ -283,6 +344,19 @@ code { font-size: .85em; padding: .05em .3em; border-radius: 4px; background: co
 a { color: var(--dv-accent); }
 .all { display: inline-block; margin: .75rem 0 .25rem; font-size: .875rem; }
 .state { color: var(--dv-muted); font-size: .875rem; min-height: 1.5rem; }
-@media (prefers-reduced-motion: no-preference) { .panel:not([hidden]) { animation: dv-in .14s ease-out; } }
+.toast {
+  position: absolute; top: calc(100% + .5rem); z-index: 999; width: min(300px, calc(100vw - 2rem)); box-sizing: border-box;
+  background: var(--dv-bg); color: var(--dv-fg); border: 1px solid var(--dv-border); border-left: 3px solid var(--dv-accent);
+  border-radius: var(--dv-radius); box-shadow: 0 8px 24px rgb(0 0 0 / .12); padding: .7rem .8rem; font-size: .875rem;
+}
+.toast[data-align="end"] { right: 0; }
+.toast[data-align="start"] { left: 0; }
+.toast-title { margin: 0; font-weight: 600; }
+.toast-text { margin: .3rem 0 0; color: var(--dv-muted); }
+.toast-actions { display: flex; align-items: center; justify-content: space-between; margin-top: .5rem; }
+.toast-show { font: inherit; font-weight: 600; color: var(--dv-accent); background: none; border: 0; padding: .2rem 0; cursor: pointer; }
+.toast-dismiss { font: inherit; font-size: 1.1rem; line-height: 1; color: var(--dv-muted); background: none; border: 0; padding: .2rem .4rem; border-radius: 6px; cursor: pointer; }
+.toast-show:focus-visible, .toast-dismiss:focus-visible { outline: 2px solid var(--dv-accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: no-preference) { .panel:not([hidden]), .toast { animation: dv-in .14s ease-out; } }
 @keyframes dv-in { from { opacity: 0; transform: translateY(-4px); } }
 `;

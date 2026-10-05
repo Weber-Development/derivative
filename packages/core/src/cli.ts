@@ -9,7 +9,9 @@ CHANGELOG.md files or conventional commits.
 
 Options:
   --config <file>       Config file (default: ${CONFIG_FILE} if present)
-  --source <kind>       changelog | git
+  --source <kind>       changelog | git | github
+  --repo <owner/name>   github: repository to read releases from
+  --prereleases         github: include pre-releases
   --changelog <file>    CHANGELOG.md path, repeat for monorepos
   --tag-pattern <re>    git: only tags matching this start a release
   --commit-url <url>    git: commit link template, {hash} is replaced
@@ -40,6 +42,8 @@ export async function main(argv: string[]): Promise<number> {
     options: {
       config: { type: "string" },
       source: { type: "string" },
+      repo: { type: "string" },
+      prereleases: { type: "boolean" },
       changelog: { type: "string", multiple: true },
       "tag-pattern": { type: "string" },
       "commit-url": { type: "string" },
@@ -58,8 +62,8 @@ export async function main(argv: string[]): Promise<number> {
     process.stdout.write(HELP);
     return 0;
   }
-  if (values.source && values.source !== "git" && values.source !== "changelog") {
-    process.stderr.write(`--source must be "git" or "changelog".\n`);
+  if (values.source && !["git", "changelog", "github"].includes(values.source)) {
+    process.stderr.write(`--source must be "changelog", "git" or "github".\n`);
     return 2;
   }
 
@@ -72,6 +76,8 @@ export async function main(argv: string[]): Promise<number> {
   const cwd = fileConfig ? dirname(configPath) : process.cwd();
   const config: DerivativeConfig = { ...fileConfig };
   if (values.source) config.source = values.source as DerivativeConfig["source"];
+  if (values.repo) config.repo = values.repo;
+  if (values.prereleases) config.includePrereleases = true;
   if (values.changelog) config.changelog = values.changelog;
   if (values["tag-pattern"]) config.tagPattern = values["tag-pattern"];
   if (values["commit-url"]) config.commitUrl = values["commit-url"];

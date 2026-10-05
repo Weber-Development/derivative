@@ -29,6 +29,8 @@ defineDerivativeWidget("acme-whats-new");
 | `href` | feed `link` | "All changes" link below the list |
 | `align` | `end` | Panel opens towards the `start` or `end` of the button |
 | `theme` | system | `light` or `dark` to override the system setting |
+| `types` | all | Comma-separated entry types to show, e.g. `feature,fix`. Releases without a matching entry are hidden unless they have a title or summary |
+| `announce` | off | Shows a small toast for the newest unread release that has a title, once per release |
 | `storage-key` | `derivative:last-seen` | `localStorage` key, set one per product if you embed several feeds |
 
 Set the `feed` property instead of `src` to pass data you already have. Set `messages` to change any text.
@@ -44,8 +46,13 @@ All events bubble and cross the shadow root.
 | `derivative-open` | |
 | `derivative-close` | |
 | `derivative-read` | `{ lastSeen }` |
+| `derivative-announce` | `{ release }`, when the toast appears |
 
-Methods: `show()`, `hide()`, `toggle()`, `markAllRead()`. Properties: `open`, `unreadCount`.
+Methods: `show()`, `hide()`, `toggle()`, `markAllRead()`, `dismissToast()`. Properties: `open`, `unreadCount`.
+
+## Announcement toast
+
+With `announce`, the widget shows a small toast next to the button for the newest unread release that has a `title` (set one in [Highlights](highlights.md) or as the GitHub release name). It contains the title, the first paragraph of the summary, and "Show" and "Dismiss" buttons. Each release is announced only once per reader; dismissing it keeps the unread badge, "Show" opens the panel. Patch releases without a title never interrupt anyone.
 
 ## Unread badge
 
@@ -64,11 +71,11 @@ derivative-widget {
 }
 ```
 
-Also available: `--dv-bg`, `--dv-fg`, `--dv-muted`, `--dv-border`, `--dv-good`, `--dv-warn`. For deeper changes, the parts `button`, `badge`, `panel`, `list` and `link` can be styled with `::part()`. Replace the bell icon with `<span slot="icon">…</span>` and the label with plain text content.
+Also available: `--dv-bg`, `--dv-fg`, `--dv-muted`, `--dv-border`, `--dv-good`, `--dv-warn`. For deeper changes, the parts `button`, `badge`, `panel`, `list`, `link` and `toast` can be styled with `::part()`. Replace the bell icon with `<span slot="icon">…</span>` and the label with plain text content.
 
 ## Accessibility
 
-The button reports its state with `aria-expanded` and announces the number of new releases to screen readers. The panel is a labelled dialog that receives focus when it opens. Escape closes it and returns focus to the button, as does a click outside. The opening animation is skipped when the reader prefers reduced motion.
+The button reports its state with `aria-expanded` and announces the number of new releases to screen readers. The panel is a labelled dialog that receives focus when it opens. Escape closes it and returns focus to the button, as does a click outside. The toast is a `role="status"` region, so screen readers announce it without moving focus. The opening animation is skipped when the reader prefers reduced motion.
 
 ## Security
 

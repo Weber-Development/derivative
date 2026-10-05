@@ -1,10 +1,20 @@
 {
   "sections": [
-    { "label": "Start", "items": ["introduction", "getting-started"] },
+    {
+      "label": "Start",
+      "items": ["introduction", "getting-started"]
+    },
     {
       "label": "Guides",
       "items": ["guides/sources", "guides/widget", "guides/react", "guides/highlights", "guides/ci"]
     },
-    { "label": "Reference", "items": ["reference/config", "reference/feed", "reference/api"] }
+    {
+      "label": "Reference",
+      "items": ["reference/config", "reference/feed", "reference/api"]
+    },
+    {
+      "label": "Pro",
+      "items": ["pro/overview", "pro/insights", "pro/segments", "pro/announce"]
+    }
   ]
 }

@@ -49,8 +49,10 @@ npx derivative-insights report --events .data/insights.ndjson --feed public/chan
 ```
 
 The report shows opens, reads and clicks per release, the most clicked links and a daily chart.
-`--json` prints the same summary as JSON. In code: `summarize(events, feed)` and
-`renderReport(summary, { title })`.
+`--json summary.json` also writes the summary as JSON. `--csv releases.csv` writes one row per
+release and `releases-daily.csv` with opens per day, for Excel or a spreadsheet. In code:
+`summarize(events, feed)`, `renderReport(summary, { title })`, `releasesCsv(summary)` and
+`dailyCsv(summary)`.
 
 ## Privacy
 

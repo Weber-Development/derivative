@@ -31,6 +31,19 @@ DERIVATIVE_WEBHOOK_URL=https://hooks.slack.com/... \
 `--to` accepts `slack`, `teams`, `discord`, `mattermost` and `google-chat`. Use `--dry-run` to print
 the payload instead. Keep webhook URLs in your CI secrets.
 
+## Mastodon
+
+```sh
+DERIVATIVE_MASTODON_TOKEN=... npx derivative-announce post --to mastodon \
+  --instance https://mastodon.social --feed public/changelog.json --product "Acme" \
+  --hashtag changelog --state .announce-mastodon.json
+```
+
+Each release becomes one public status of at most 500 characters: title, the first summary
+paragraph and as many entries as fit, then the changelog link and hashtags. Create the token under
+Preferences → Development with only the `write:statuses` scope. The instance can also come from
+`DERIVATIVE_MASTODON_URL`.
+
 ## Each release once
 
 `--state <file>` stores the newest announced release. The next run only picks up releases after

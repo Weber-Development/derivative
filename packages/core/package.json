@@ -1,6 +1,6 @@
 {
   "name": "@sweberdev/derivative",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Self-hosted changelog and \"What's new\" widget. Generates changelog.json, an Atom feed and a page from Changesets, CHANGELOG.md or conventional commits. No SaaS, no tracking.",
   "license": "MIT",
   "author": "Seya Weber (https://github.com/sxwxbxr)",

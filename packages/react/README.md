@@ -16,8 +16,8 @@ npx derivative build            # writes public/changelog.json
 
 | Package | |
 |---|---|
-| [`@sweberdev/derivative`](packages/core) | Parsers, `derivative build` CLI, renderers, `<derivative-widget>` |
-| [`@sweberdev/derivative-react`](packages/react) | `<WhatsNew>`, `useChangelog`, `<ChangelogList>` |
+| [`@sweberdev/derivative`](https://github.com/Weber-Development/derivative/tree/main/packages/core) | Parsers, `derivative build` CLI, renderers, `<derivative-widget>` |
+| [`@sweberdev/derivative-react`](https://github.com/Weber-Development/derivative/tree/main/packages/react) | `<WhatsNew>`, `useChangelog`, `<ChangelogList>` |
 
 - Reads Changesets (default and GitHub formats), Keep a Changelog, conventional-changelog and conventional commits with tags
 - Web component of about 6 kB gzipped: popover or inline, keyboard and screen reader support, dark mode, EN, DE, FR, IT

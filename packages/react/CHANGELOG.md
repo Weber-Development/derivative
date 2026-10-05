@@ -1,5 +1,16 @@
 # @sweberdev/derivative-react
 
+## 0.2.0
+
+### Minor Changes
+
+- 32bb03b: GitHub Releases as a source (`--source github --repo owner/name`), an `announce` toast for the newest titled release, and a `types` filter for the widget.
+
+### Patch Changes
+
+- Updated dependencies [32bb03b]
+  - @sweberdev/derivative@0.2.0
+
 ## 0.1.0
 
 ### Minor Changes

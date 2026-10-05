@@ -7,7 +7,7 @@
 | packages.sweber.dev | entry and live demo at packages.sweber.dev/derivative (sxwxbxr/portfoliov3#65, merged) |
 | Docs | Markdown in `docs/` with `nav.json`, rendered at packages.sweber.dev/derivative/docs once the repo is public; Pro pages under `docs/pro/` |
 | Pro | yes (Seya, 2026-10-05): `@weber-development/derivative-{insights,segments,announce}` in `Weber-Development/derivative-pro`, customers via `derivative-pro-dist` |
-| Prices | Freelancer 9 CHF/month or 90/year, Agency 29/290, Lifetime 990 CHF (Seya, 2026-10-05) |
+| Prices | Freelancer 12 CHF/month or 120/year, Agency 39/390, Lifetime 1'290 CHF (Seya, 2026-10-05) |
 | Polar | config in Werkbank `packages/derivative.json`; benefit "Derivative Pro" to be created by Seya |
 | Blog post | `content/blog/derivative-0-1-0-released.md` in portfoliov3, after 0.1.0 is on npm |
 | Trademark check "Derivative" | open (Seya) |

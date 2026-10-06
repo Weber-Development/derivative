@@ -1,5 +1,11 @@
 # @sweberdev/derivative
 
+## 0.4.0
+
+### Minor Changes
+
+- b20427a: Search field in the panel: `<derivative-widget search>` (React: `search`) filters releases as you type across version, title, summary, entries, details and scope. Texts for en, de, fr and it.
+
 ## 0.3.0
 
 ### Minor Changes

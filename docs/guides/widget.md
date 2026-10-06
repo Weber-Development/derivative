@@ -79,7 +79,44 @@ derivative-widget {
 }
 ```
 
-Also available: `--dv-bg`, `--dv-fg`, `--dv-muted`, `--dv-border`, `--dv-good`, `--dv-warn`. For deeper changes, the parts `button`, `badge`, `panel`, `list`, `link` and `toast` can be styled with `::part()`. Replace the bell icon with `<span slot="icon">…</span>` and the label with plain text content.
+Also available:
+
+| Property | Default | Meaning |
+|---|---|---|
+| `--dv-bg`, `--dv-fg`, `--dv-muted`, `--dv-border` | light or dark set | Surfaces and text |
+| `--dv-good`, `--dv-warn` | green, orange | Colours of Fixed and of Breaking and Security badges |
+| `--dv-button-radius` | `999px` | Corner radius of the button |
+| `--dv-button-bg`, `--dv-button-fg` | `--dv-bg`, inherited | Button colours |
+| `--dv-badge-fg` | `--dv-bg` | Text colour of the unread badge (background is `--dv-accent`) |
+| `--dv-shadow` | soft shadow | Shadow of the panel and the toast |
+| `--dv-max-height` | `min(70vh, 560px)` | Height limit of the panel |
+| `--dv-z` | `1000` | Stacking order of the panel, the toast sits one below |
+
+For deeper changes, use `::part()`: `button`, `badge`, `panel`, `header`, `title`, `close`, `search`, `list`, `link`, `release`, `release-title`, `meta`, `summary`, `entry`, `type`, `scope`, `entry-link`, `toast`, `toast-title`, `toast-action` and `toast-dismiss`.
+
+```css
+derivative-widget::part(entry) { padding-block: 0.25rem; }
+derivative-widget::part(release-title) { font-family: "Space Grotesk", sans-serif; }
+```
+
+Replace the bell icon with `<span slot="icon">…</span>` and the label with plain text content.
+
+### Dark mode
+
+By default the widget follows the system setting. If your app has its own switch, such as a `dark` class on `<html>`, set the `theme` attribute from it instead:
+
+```js
+const widget = document.querySelector("derivative-widget");
+new MutationObserver(() => {
+  widget.setAttribute("theme", document.documentElement.classList.contains("dark") ? "dark" : "light");
+}).observe(document.documentElement, { attributeFilter: ["class"] });
+```
+
+Or style the colour properties yourself, e.g. `.dark derivative-widget { --dv-bg: #0b0b0f; --dv-fg: #f4f4f5; }`.
+
+### Right-to-left
+
+Pages with `dir="rtl"` need no setting: the panel and the toast open from the correct side, and `align="start"` and `align="end"` follow the reading direction.
 
 ## Accessibility
 

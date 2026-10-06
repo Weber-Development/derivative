@@ -102,6 +102,27 @@ release and `releases-daily.csv` with opens per day, for Excel or a spreadsheet.
 `summarize(events, feed)`, `renderReport(summary, { title })`, `releasesCsv(summary)` and
 `dailyCsv(summary)`.
 
+## Dashboard route
+
+Serve the dashboard from your own backend instead of generating a file. The handler needs a store, a way to decide who may look, and optionally the feed:
+
+```ts
+import {
+  basicAuth,
+  createDashboardHandler,
+  sqlStore,
+} from "@weber-development/derivative-insights";
+
+export const GET = createDashboardHandler({
+  store,
+  feed: () => loadFeed(),
+  authorize: basicAuth("team", process.env.INSIGHTS_PASSWORD!),
+  title: "Acme changelog insights",
+});
+```
+
+Open the route in a browser for the report (the last 30 days). `?days=7` narrows the period (1 to 365; `defaultDays` changes the default), `?format=json` returns the summary, and `?format=csv` or `?format=csv&table=daily` downloads a spreadsheet. `authorize` is required on purpose, there is no open default: use `basicAuth(user, password)`, `bearerAuth(token)` for scripts (`curl -H "Authorization: Bearer ..."`), or your own session check, for example `(request) => isAdmin(request)`. Both helpers compare in constant time. Responses are `private, no-store` and `noindex`, and the page carries a Content-Security-Policy that forbids scripts and external requests, so numbers cannot leak through a third-party asset.
+
 ## Privacy
 
 No cookie is set, no visitor ID is created and the handler stores no IP address. Your server and

@@ -27,23 +27,23 @@ export function renderReleases(releases: Release[], options: RenderOptions = {})
       const entries = release.entries
         .map((entry) => {
           const scope = entry.scope
-            ? `<span class="dv-scope">${escapeHtml(entry.scope)}:</span> `
+            ? `<span class="dv-scope" part="scope">${escapeHtml(entry.scope)}:</span> `
             : "";
           const link = entry.link
-            ? ` <a class="dv-link" href="${escapeHtml(entry.link)}" rel="noopener">#</a>`
+            ? ` <a class="dv-link" part="entry-link" href="${escapeHtml(entry.link)}" rel="noopener">#</a>`
             : "";
           const details = entry.details
             ? `<div class="dv-details">${blockMarkdown(entry.details)}</div>`
             : "";
-          return `<li class="dv-entry" data-type="${entry.type}"><span class="dv-type">${escapeHtml(t.types[entry.type])}</span> <span class="dv-text">${scope}${inlineMarkdown(entry.text)}${link}</span>${details}</li>`;
+          return `<li class="dv-entry" part="entry" data-type="${entry.type}"><span class="dv-type" part="type">${escapeHtml(t.types[entry.type])}</span> <span class="dv-text">${scope}${inlineMarkdown(entry.text)}${link}</span>${details}</li>`;
         })
         .join("");
       return [
-        `<article class="dv-release" id="${escapeHtml(slug(releaseKey(release)))}">`,
-        `<${h} class="dv-title">${escapeHtml(name)}</${h}>`,
-        meta.length ? `<p class="dv-meta">${meta.join(" · ")}</p>` : "",
+        `<article class="dv-release" part="release" id="${escapeHtml(slug(releaseKey(release)))}">`,
+        `<${h} class="dv-title" part="release-title">${escapeHtml(name)}</${h}>`,
+        meta.length ? `<p class="dv-meta" part="meta">${meta.join(" · ")}</p>` : "",
         release.image ? `<img class="dv-image" src="${escapeHtml(release.image)}" alt="" />` : "",
-        release.summary ? `<div class="dv-summary">${blockMarkdown(release.summary)}</div>` : "",
+        release.summary ? `<div class="dv-summary" part="summary">${blockMarkdown(release.summary)}</div>` : "",
         entries ? `<ul class="dv-entries">${entries}</ul>` : "",
         "</article>",
       ].join("");

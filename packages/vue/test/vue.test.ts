@@ -38,12 +38,14 @@ describe("<WhatsNew>", () => {
       types: ["feature"],
       search: true,
       limit: 5,
+      headingLevel: 4,
     });
     await nextTick();
     const el = root.querySelector("derivative-widget") as HTMLElement & { feed?: unknown };
     expect(el.getAttribute("lang")).toBe("de");
     expect(el.getAttribute("types")).toBe("feature");
     expect(el.getAttribute("limit")).toBe("5");
+    expect(el.getAttribute("heading-level")).toBe("4");
     expect(el.hasAttribute("search")).toBe(true);
     expect(el.hasAttribute("announce")).toBe(false);
     expect(el.feed).toBeTruthy();

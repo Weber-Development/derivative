@@ -70,4 +70,13 @@ describe("WhatsNew", () => {
     expect(onRead).toHaveBeenCalledWith("2.0.0");
     expect(screen.queryByText("Updates")).toBeNull(); // lives in shadow DOM, not the light DOM
   });
+
+  it("passes the heading level and package filter as attributes", () => {
+    const { container } = render(
+      <WhatsNew feed={feed} headingLevel={4} packages={["@acme/web", "@acme/ui-*"]} />,
+    );
+    const element = container.querySelector("derivative-widget");
+    expect(element?.getAttribute("heading-level")).toBe("4");
+    expect(element?.getAttribute("package")).toBe("@acme/web,@acme/ui-*");
+  });
 });

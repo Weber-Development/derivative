@@ -13,13 +13,14 @@
         "guides/vue",
         "guides/svelte",
         "guides/examples",
+        "guides/upgrading",
         "guides/highlights",
         "guides/ci"
       ]
     },
     {
       "label": "Reference",
-      "items": ["reference/config", "reference/feed", "reference/api"]
+      "items": ["reference/config", "reference/feed", "reference/api", "reference/stability"]
     },
     {
       "label": "Pro",

@@ -16,8 +16,10 @@ export {
 } from "./parse/commits";
 export {
   type GitHubRelease,
+  type GitLabRelease,
   type ParseGitHubReleasesOptions,
   parseGitHubReleases,
+  parseGitLabReleases,
 } from "./parse/github";
 export { type ParseChangelogOptions, parseChangelog } from "./parse/markdown";
 export {

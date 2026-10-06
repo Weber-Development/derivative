@@ -52,6 +52,8 @@ export const WhatsNew = defineComponent({
     announce: Boolean,
     /** Add a search field to the panel. */
     search: Boolean,
+    /** Monorepo feeds: show only these packages. A trailing `*` matches a prefix. */
+    packages: Array as PropType<string[]>,
     /** Override any UI text. */
     messages: Object as PropType<Partial<Messages>>,
   },
@@ -95,6 +97,7 @@ export const WhatsNew = defineComponent({
           types: props.types?.join(","),
           announce: props.announce ? "" : undefined,
           search: props.search ? "" : undefined,
+          package: props.packages?.join(","),
           onDerivativeOpen: onOpen,
           "onDerivative-read": onRead,
         },

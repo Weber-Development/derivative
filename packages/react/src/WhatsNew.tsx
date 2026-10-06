@@ -23,6 +23,8 @@ export interface WhatsNewProps {
   announce?: boolean;
   /** Add a search field to the panel. */
   search?: boolean;
+  /** Monorepo feeds: show only these packages. A trailing `*` matches a prefix. */
+  packages?: string[];
   messages?: Partial<Messages>;
   className?: string;
   style?: CSSProperties;
@@ -75,6 +77,7 @@ export function WhatsNew(props: WhatsNewProps) {
       types={props.types?.join(",")}
       announce={props.announce ? "" : undefined}
       search={props.search ? "" : undefined}
+      package={props.packages?.join(",")}
       className={props.className}
       style={props.style}
     >
@@ -101,6 +104,7 @@ declare module "react" {
         types?: string;
         announce?: string;
         search?: string;
+        package?: string;
       };
     }
   }

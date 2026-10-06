@@ -1,5 +1,16 @@
 # @sweberdev/derivative-react
 
+## 1.0.0
+
+### Major Changes
+
+- d70093d: 1.0.0: the stability promise starts. Nothing changes compared with 0.9.0. From here on the exports, CLI, config keys, feed format and widget API listed in the Stability page follow semantic versioning, and deprecations are announced one minor release ahead.
+
+### Patch Changes
+
+- Updated dependencies [d70093d]
+  - @sweberdev/derivative@1.0.0
+
 ## 0.9.0
 
 ### Minor Changes

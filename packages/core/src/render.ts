@@ -43,7 +43,9 @@ export function renderReleases(releases: Release[], options: RenderOptions = {})
         `<${h} class="dv-title" part="release-title">${escapeHtml(name)}</${h}>`,
         meta.length ? `<p class="dv-meta" part="meta">${meta.join(" · ")}</p>` : "",
         release.image ? `<img class="dv-image" src="${escapeHtml(release.image)}" alt="" />` : "",
-        release.summary ? `<div class="dv-summary" part="summary">${blockMarkdown(release.summary)}</div>` : "",
+        release.summary
+          ? `<div class="dv-summary" part="summary">${blockMarkdown(release.summary)}</div>`
+          : "",
         entries ? `<ul class="dv-entries">${entries}</ul>` : "",
         "</article>",
       ].join("");

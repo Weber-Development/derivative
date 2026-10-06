@@ -44,6 +44,19 @@ paragraph and as many entries as fit, then the changelog link and hashtags. Crea
 Preferences → Development with only the `write:statuses` scope. The instance can also come from
 `DERIVATIVE_MASTODON_URL`.
 
+## Bluesky
+
+```sh
+DERIVATIVE_BLUESKY_APP_PASSWORD=... npx derivative-announce post --to bluesky \
+  --handle acme.bsky.social --feed public/changelog.json --product "Acme" \
+  --hashtag changelog --state .announce-bluesky.json
+```
+
+Each release becomes one post of at most 300 characters with the changelog as a link card and the
+hashtags as real tags. Create an app password under Settings → Privacy and security → App
+passwords; never use the account password. The handle can also come from
+`DERIVATIVE_BLUESKY_HANDLE`.
+
 ## Each release once
 
 `--state <file>` stores the newest announced release. The next run only picks up releases after

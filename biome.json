@@ -11,7 +11,10 @@
       "!**/test-results",
       "!**/playwright-report",
       "!**/.astro",
-      "!**/test/fixtures"
+      "!**/test/fixtures",
+      "!examples/**/*.svelte",
+      "!examples/**/*.astro",
+      "!**/.svelte-kit"
     ]
   },
   "formatter": {

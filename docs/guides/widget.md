@@ -83,7 +83,7 @@ Also available: `--dv-bg`, `--dv-fg`, `--dv-muted`, `--dv-border`, `--dv-good`, 
 
 ## Accessibility
 
-Release headings are `h3` under the panel's `h2`; inline lists start at `h2` and can be moved with `heading-level`. The widget is checked with axe in the test suite. The button reports its state with `aria-expanded` and announces the number of new releases to screen readers. The panel is a labelled dialog that receives focus when it opens. Escape closes it and returns focus to the button, as does a click outside. The toast is a `role="status"` region, so screen readers announce it without moving focus. The opening animation is skipped when the reader prefers reduced motion.
+Colours meet the WCAG AA contrast ratio (4.5:1) in light and dark mode. Pages with `dir="rtl"` work too: the panel and toast open from the correct side. Both are checked in real Chromium in CI. Release headings are `h3` under the panel's `h2`; inline lists start at `h2` and can be moved with `heading-level`. The widget is checked with axe in the test suite. The button reports its state with `aria-expanded` and announces the number of new releases to screen readers. The panel is a labelled dialog that receives focus when it opens. Escape closes it and returns focus to the button, as does a click outside. The toast is a `role="status"` region, so screen readers announce it without moving focus. The opening animation is skipped when the reader prefers reduced motion.
 
 ## Security
 

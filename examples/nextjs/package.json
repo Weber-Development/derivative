@@ -1,0 +1,21 @@
+{
+  "name": "derivative-example-nextjs",
+  "private": true,
+  "scripts": {
+    "changelog": "derivative build --out public/changelog.json --title Acme --link /",
+    "dev": "pnpm changelog && next dev",
+    "build": "pnpm changelog && next build"
+  },
+  "dependencies": {
+    "@sweberdev/derivative": "^0.6.0",
+    "@sweberdev/derivative-react": "^0.6.0",
+    "next": "^15.5.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "typescript": "^5.9.0"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "derivative-example-astro",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "changelog": "derivative build --out public/changelog.json --title Acme --link /",
+    "dev": "pnpm changelog && astro dev",
+    "build": "pnpm changelog && astro build"
+  },
+  "dependencies": {
+    "@sweberdev/derivative": "^0.6.0",
+    "astro": "^5.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0"
+  }
+}

@@ -24,3 +24,35 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm check:packages
+
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @sweberdev/derivative build
+      - run: pnpm --dir packages/core exec playwright-core install --with-deps chromium
+      - run: pnpm --dir packages/core test:browser
+
+  examples:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        example: [vite, nextjs, sveltekit, astro]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Standalone installs against the published package, like a user would do.
+      - run: pnpm install --ignore-workspace
+        working-directory: examples/${{ matrix.example }}
+      - run: pnpm build
+        working-directory: examples/${{ matrix.example }}

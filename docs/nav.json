@@ -12,6 +12,7 @@
         "guides/react",
         "guides/vue",
         "guides/svelte",
+        "guides/examples",
         "guides/highlights",
         "guides/ci"
       ]

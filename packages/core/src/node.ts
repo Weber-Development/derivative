@@ -4,7 +4,12 @@ import { dirname, resolve } from "node:path";
 import { promisify } from "node:util";
 import { createFeed } from "./feed";
 import { type Commit, parseCommits } from "./parse/commits";
-import { type GitHubRelease, parseGitHubReleases } from "./parse/github";
+import {
+  type GitHubRelease,
+  type GitLabRelease,
+  parseGitHubReleases,
+  parseGitLabReleases,
+} from "./parse/github";
 import { parseChangelog } from "./parse/markdown";
 import { renderAtom, renderJsonFeed, renderPage } from "./render";
 import type { EntryType, Feed, Highlights, Release } from "./types";
@@ -14,13 +19,25 @@ const run = promisify(execFile);
 export interface DerivativeConfig {
   /**
    * `changelog` reads CHANGELOG.md files, `git` reads conventional commits, `github` reads the
-   * releases of `repo` through the GitHub API. Default `changelog` if a file exists, else `git`.
+   * releases of `repo` through the GitHub API, `gitlab` those of `project` through the GitLab API.
+   * Default `changelog` if a file exists, else `git`.
    */
-  source?: "changelog" | "git" | "github";
+  source?: "changelog" | "git" | "github" | "gitlab";
   /** GitHub: `owner/name`. Uses the `GITHUB_TOKEN` environment variable when set. */
   repo?: string;
-  /** GitHub: include pre-releases. */
+  /** GitLab: project path (`group/name`) or numeric id. Uses `GITLAB_TOKEN` when set. */
+  project?: string;
+  /** GitLab: base URL of a self-managed instance. Default `https://gitlab.com`. */
+  gitlabUrl?: string;
+  /** GitHub and GitLab: include pre-releases (GitLab: upcoming releases). */
   includePrereleases?: boolean;
+  /**
+   * Monorepos: keep only releases of these packages. A trailing `*` matches a prefix, so
+   * `@acme/*` takes every package in the scope.
+   */
+  packages?: string[];
+  /** Monorepos: drop releases of these packages (same patterns). Applied after `packages`. */
+  excludePackages?: string[];
   /** One or more CHANGELOG.md paths (monorepos: one per package). Default `CHANGELOG.md`. */
   changelog?: string | string[];
   /** Git: only tags matching this regular expression start a release. */
@@ -118,6 +135,43 @@ export async function readGitHubReleases(
   return all;
 }
 
+/** Reads published releases of a GitLab project, newest first (up to 300). */
+export async function readGitLabReleases(
+  project: string,
+  options: { token?: string; fetch?: typeof fetch; baseUrl?: string } = {},
+): Promise<GitLabRelease[]> {
+  if (!/^(\d+|[\w.-]+(\/[\w.-]+)+)$/.test(project) || /(^|\/)\.+(\/|$)/.test(project)) {
+    throw new Error(`"${project}" is not a GitLab project path like group/name or a numeric id.`);
+  }
+  const doFetch = options.fetch ?? fetch;
+  const token = options.token ?? process.env.GITLAB_TOKEN;
+  const base = (options.baseUrl ?? "https://gitlab.com").replace(/\/$/, "");
+  const all: GitLabRelease[] = [];
+  for (let page = 1; page <= 3; page++) {
+    const response = await doFetch(
+      `${base}/api/v4/projects/${encodeURIComponent(project)}/releases?per_page=100&page=${page}`,
+      {
+        headers: { "user-agent": "derivative", ...(token ? { "private-token": token } : {}) },
+      },
+    );
+    if (!response.ok) {
+      throw new Error(
+        `GitLab API ${response.status} for ${project}${token ? "" : " (set GITLAB_TOKEN for private projects)"}`,
+      );
+    }
+    const batch = (await response.json()) as GitLabRelease[];
+    all.push(...batch);
+    if (batch.length < 100) break;
+  }
+  return all;
+}
+
+/** True when `name` matches one of the patterns (`*` at the end matches a prefix). */
+export function matchesPackage(name: string | undefined, patterns: string[]): boolean {
+  if (!name) return false;
+  return patterns.some((p) => (p.endsWith("*") ? name.startsWith(p.slice(0, -1)) : name === p));
+}
+
 async function exists(path: string): Promise<boolean> {
   try {
     await readFile(path);
@@ -132,7 +186,13 @@ export async function buildFeed(config: DerivativeConfig = {}, cwd = process.cwd
   const files = [config.changelog ?? "CHANGELOG.md"].flat();
   const source =
     config.source ??
-    ((await exists(resolve(cwd, files[0] ?? ""))) ? "changelog" : config.repo ? "github" : "git");
+    ((await exists(resolve(cwd, files[0] ?? "")))
+      ? "changelog"
+      : config.repo
+        ? "github"
+        : config.project
+          ? "gitlab"
+          : "git");
   let releases: Release[] = [];
 
   if (source === "changelog") {
@@ -156,6 +216,12 @@ export async function buildFeed(config: DerivativeConfig = {}, cwd = process.cwd
     releases = parseGitHubReleases(await readGitHubReleases(config.repo), {
       includePrereleases: config.includePrereleases,
     });
+  } else if (source === "gitlab") {
+    if (!config.project) throw new Error('source "gitlab" needs "project", e.g. "group/app".');
+    releases = parseGitLabReleases(
+      await readGitLabReleases(config.project, { baseUrl: config.gitlabUrl }),
+      { includePrereleases: config.includePrereleases },
+    );
   } else {
     const template = config.commitUrl;
     releases = parseCommits(await readGitCommits(cwd), {
@@ -164,6 +230,15 @@ export async function buildFeed(config: DerivativeConfig = {}, cwd = process.cwd
       includeUnreleased: config.includeUnreleased,
       commitUrl: template ? (hash) => template.replace("{hash}", hash) : undefined,
     });
+  }
+
+  if (config.packages?.length) {
+    const keep = config.packages;
+    releases = releases.filter((r) => matchesPackage(r.package, keep));
+  }
+  if (config.excludePackages?.length) {
+    const drop = config.excludePackages;
+    releases = releases.filter((r) => !matchesPackage(r.package, drop));
   }
 
   return createFeed(releases, {

@@ -20,9 +20,13 @@ HTML page) from CHANGELOG.md files, conventional commits or GitHub Releases.
 
 Options:
   --config <file>       Config file (default: ${CONFIG_FILE} if present)
-  --source <kind>       changelog | git | github
+  --source <kind>       changelog | git | github | gitlab
   --repo <owner/name>   github: repository to read releases from
-  --prereleases         github: include pre-releases
+  --project <path>      gitlab: group/name or numeric id (GITLAB_TOKEN for private projects)
+  --gitlab-url <url>    gitlab: self-managed instance (default https://gitlab.com)
+  --package <name>      monorepos: keep only this package (repeatable, trailing * matches a prefix)
+  --exclude-package <name>  monorepos: drop this package (repeatable)
+  --prereleases         github, gitlab: include pre-releases
   --changelog <file>    CHANGELOG.md path, repeat for monorepos
   --tag-pattern <re>    git: only tags matching this start a release
   --commit-url <url>    git: commit link template, {hash} is replaced
@@ -67,6 +71,10 @@ export async function main(argv: string[]): Promise<number> {
       config: { type: "string" },
       source: { type: "string" },
       repo: { type: "string" },
+      project: { type: "string" },
+      "gitlab-url": { type: "string" },
+      package: { type: "string", multiple: true },
+      "exclude-package": { type: "string", multiple: true },
       prereleases: { type: "boolean" },
       changelog: { type: "string", multiple: true },
       "tag-pattern": { type: "string" },
@@ -87,8 +95,8 @@ export async function main(argv: string[]): Promise<number> {
     process.stdout.write(HELP);
     return 0;
   }
-  if (values.source && !["git", "changelog", "github"].includes(values.source)) {
-    process.stderr.write(`--source must be "changelog", "git" or "github".\n`);
+  if (values.source && !["git", "changelog", "github", "gitlab"].includes(values.source)) {
+    process.stderr.write(`--source must be "changelog", "git", "github" or "gitlab".\n`);
     return 2;
   }
 
@@ -102,6 +110,10 @@ export async function main(argv: string[]): Promise<number> {
   const config: DerivativeConfig = { ...fileConfig };
   if (values.source) config.source = values.source as DerivativeConfig["source"];
   if (values.repo) config.repo = values.repo;
+  if (values.project) config.project = values.project;
+  if (values["gitlab-url"]) config.gitlabUrl = values["gitlab-url"];
+  if (values.package) config.packages = values.package;
+  if (values["exclude-package"]) config.excludePackages = values["exclude-package"];
   if (values.prereleases) config.includePrereleases = true;
   if (values.changelog) config.changelog = values.changelog;
   if (values["tag-pattern"]) config.tagPattern = values["tag-pattern"];

@@ -7,7 +7,7 @@ export interface RenderOptions {
   lang?: string;
   messages?: Partial<Messages>;
   /** Heading level of each release title. Default 2. */
-  headingLevel?: 2 | 3 | 4;
+  headingLevel?: 2 | 3 | 4 | 5 | 6;
 }
 
 /** HTML for a list of releases. Class names start with `dv-`; style them as you like. */

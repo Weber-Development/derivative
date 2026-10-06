@@ -272,3 +272,49 @@ describe("derivative-render", () => {
     expect(seen).toHaveBeenCalledTimes(2);
   });
 });
+
+describe("package attribute", () => {
+  const mono: Feed = createFeed(
+    [
+      {
+        id: "2.0.0",
+        package: "@acme/web",
+        date: "2026-10-02",
+        entries: [{ type: "feature", text: "Dark mode" }],
+      },
+      {
+        id: "1.5.0",
+        package: "@acme/api",
+        date: "2026-10-01",
+        entries: [{ type: "fix", text: "Rate limit" }],
+      },
+    ],
+    { generatedAt: null },
+  );
+
+  it("shows, counts and marks as read only the chosen packages", () => {
+    const el = mount({ mode: "inline", package: "@acme/api" });
+    el.feed = mono;
+    expect(shadow(el).querySelectorAll(".dv-release")).toHaveLength(1);
+    expect(shadow(el).querySelector(".list")?.textContent).toContain("Rate limit");
+    expect(el.unreadCount).toBe(1);
+    el.setAttribute("package", "@acme/*");
+    expect(shadow(el).querySelectorAll(".dv-release")).toHaveLength(2);
+    el.setAttribute("package", "@acme/web");
+    expect(shadow(el).querySelector(".list")?.textContent).not.toContain("Rate limit");
+  });
+});
+
+describe("heading level", () => {
+  it("uses h3 in the panel, h2 inline and follows heading-level", () => {
+    const panel = mount();
+    panel.feed = feed;
+    panel.show();
+    expect(shadow(panel).querySelector(".dv-title")?.tagName).toBe("H3");
+    const inline = mount({ mode: "inline" });
+    inline.feed = feed;
+    expect(shadow(inline).querySelector(".dv-title")?.tagName).toBe("H2");
+    inline.setAttribute("heading-level", "4");
+    expect(shadow(inline).querySelector(".dv-title")?.tagName).toBe("H4");
+  });
+});

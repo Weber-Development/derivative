@@ -15,7 +15,7 @@ let instances = 0;
  *
  * Attributes: `src`, `lang`, `mode` (`popover` | `inline`), `limit`, `storage-key`, `href`,
  * `label`, `align` (`start` | `end`), `types` (comma-separated entry types to show), `announce`
- * (show a toast once for a new release with a title), `search` (adds a search field to the panel). Events: `derivative-open`,
+ * (show a toast once for a new release with a title), `search` (adds a search field to the panel), `heading-level` (2 to 6, the level of the release headings; default 3 in the panel and 2 inline), `package` (monorepo feeds: only these packages, comma-separated, a trailing `*` matches a prefix). Events: `derivative-open`,
  * `derivative-close`, `derivative-read`, `derivative-load`, `derivative-error`,
  * `derivative-announce`, `derivative-render` (the list was drawn; `detail.list` is the element, for extensions that add to each release).
  */
@@ -30,6 +30,8 @@ export class DerivativeWidget extends Base {
     "align",
     "types",
     "search",
+    "package",
+    "heading-level",
   ];
 
   /** Override any UI text. */
@@ -61,7 +63,8 @@ export class DerivativeWidget extends Base {
   }
 
   get unreadCount(): number {
-    return this.#feed ? getUnread(this.#feed, this.#store().get()).length : 0;
+    const view = this.#view;
+    return view ? getUnread(view, this.#store().get()).length : 0;
   }
 
   connectedCallback(): void {
@@ -106,8 +109,9 @@ export class DerivativeWidget extends Base {
   }
 
   markAllRead(): void {
-    if (!this.#feed) return;
-    const key = latestKey(this.#feed);
+    const view = this.#view;
+    if (!view) return;
+    const key = latestKey(view);
     if (!key || key === this.#store().get()) return;
     this.#store().set(key);
     this.#emit("derivative-read", { lastSeen: key });
@@ -133,8 +137,9 @@ export class DerivativeWidget extends Base {
   /** The newest unread release with a title, unless it was announced already. */
   #pickToast(): void {
     this.#toast = undefined;
-    if (!this.#feed || !this.hasAttribute("announce") || this.#mode === "inline") return;
-    const release = getUnread(this.#feed, this.#store().get()).find((r) => r.title);
+    const view = this.#view;
+    if (!view || !this.hasAttribute("announce") || this.#mode === "inline") return;
+    const release = getUnread(view, this.#store().get()).find((r) => r.title);
     if (!release || this.#toastStore().get() === releaseKey(release)) return;
     this.#toast = release;
     this.#emit("derivative-announce", { release: releaseKey(release) });
@@ -147,6 +152,27 @@ export class DerivativeWidget extends Base {
       raw.split(/[\s,]+/).filter((t) => (ENTRY_TYPES as readonly string[]).includes(t)),
     );
     return set.size ? set : undefined;
+  }
+
+  /** The feed as this widget shows it: limited to the `package` attribute in monorepo feeds. */
+  get #view(): Feed | undefined {
+    const feed = this.#feed;
+    const raw = this.getAttribute("package");
+    if (!feed || !raw) return feed;
+    const names = raw
+      .split(",")
+      .map((n) => n.trim())
+      .filter(Boolean);
+    const match = (name: string | undefined) =>
+      !!name && names.some((n) => (n.endsWith("*") ? name.startsWith(n.slice(0, -1)) : name === n));
+    return { ...feed, releases: feed.releases.filter((r) => match(r.package)) };
+  }
+
+  /** Release headings: h3 under the panel's h2, h2 when inline (override with `heading-level`). */
+  get #headingLevel(): 2 | 3 | 4 | 5 | 6 {
+    const n = Number.parseInt(this.getAttribute("heading-level") ?? "", 10);
+    if (n >= 2 && n <= 6) return n as 2 | 3 | 4 | 5 | 6;
+    return this.#mode === "inline" ? 2 : 3;
   }
 
   get #searchable(): boolean {
@@ -223,25 +249,26 @@ export class DerivativeWidget extends Base {
   #listHtml(): string {
     const t = this.#t;
     if (this.#error) return `<p class="state">${escapeHtml(t.error)}</p>`;
-    if (!this.#feed) return `<p class="state" aria-busy="true"></p>`;
+    const view = this.#view;
+    if (!view) return `<p class="state" aria-busy="true"></p>`;
     const limit = Number.parseInt(this.getAttribute("limit") ?? "", 10);
     const types = this.#types;
     const filtered = types
-      ? this.#feed.releases
+      ? view.releases
           .map((r) => ({ ...r, entries: r.entries.filter((e) => types.has(e.type)) }))
           .filter((r) => r.entries.length > 0 || r.title || r.summary)
-      : this.#feed.releases;
+      : view.releases;
     const query = this.#searchable ? this.#query.trim().toLowerCase() : "";
     const matching = query ? filtered.filter((r) => matches(r, query)) : filtered;
     const releases = query ? matching : matching.slice(0, Number.isNaN(limit) ? 10 : limit);
     if (releases.length === 0) {
       return `<p class="state">${escapeHtml(query ? t.noResults : t.empty)}</p>`;
     }
-    const unread = new Set(getUnread(this.#feed, this.#store().get()).map(releaseKey));
+    const unread = new Set(getUnread(view, this.#store().get()).map(releaseKey));
     const html = renderReleases(releases, {
       lang: this.getAttribute("lang") ?? undefined,
       messages: this.messages,
-      headingLevel: 3,
+      headingLevel: this.#headingLevel,
     });
     // Mark unread releases so they can be highlighted.
     let index = 0;

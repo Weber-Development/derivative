@@ -30,6 +30,8 @@ defineDerivativeWidget("acme-whats-new");
 | `align` | `end` | Panel opens towards the `start` or `end` of the button |
 | `theme` | system | `light` or `dark` to override the system setting |
 | `types` | all | Comma-separated entry types to show, e.g. `feature,fix`. Releases without a matching entry are hidden unless they have a title or summary |
+| `package` | all | Monorepo feeds: show, count and mark as read only these packages. Comma-separated, a trailing `*` matches a prefix, e.g. `@acme/*` |
+| `heading-level` | `3` in the panel, `2` inline | Level of the release headings, 2 to 6, so the page's heading outline stays in order |
 | `announce` | off | Shows a small toast for the newest unread release that has a title, once per release |
 | `search` | off | Adds a search field above the list. It filters as you type across version, title, summary, entries, details and scope, and ignores `limit` while a query is active |
 | `storage-key` | `derivative:last-seen` | `localStorage` key, set one per product if you embed several feeds |
@@ -81,7 +83,7 @@ Also available: `--dv-bg`, `--dv-fg`, `--dv-muted`, `--dv-border`, `--dv-good`, 
 
 ## Accessibility
 
-The button reports its state with `aria-expanded` and announces the number of new releases to screen readers. The panel is a labelled dialog that receives focus when it opens. Escape closes it and returns focus to the button, as does a click outside. The toast is a `role="status"` region, so screen readers announce it without moving focus. The opening animation is skipped when the reader prefers reduced motion.
+Release headings are `h3` under the panel's `h2`; inline lists start at `h2` and can be moved with `heading-level`. The widget is checked with axe in the test suite. The button reports its state with `aria-expanded` and announces the number of new releases to screen readers. The panel is a labelled dialog that receives focus when it opens. Escape closes it and returns focus to the button, as does a click outside. The toast is a `role="status"` region, so screen readers announce it without moving focus. The opening animation is skipped when the reader prefers reduced motion.
 
 ## Security
 

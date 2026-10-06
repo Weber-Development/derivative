@@ -83,3 +83,31 @@ function cleanBody(body: string): string {
   }
   return out.join("\n");
 }
+
+/** The fields Derivative reads from the GitLab REST API `GET /projects/:id/releases`. */
+export interface GitLabRelease {
+  tag_name: string;
+  name?: string | null;
+  description?: string | null;
+  released_at?: string | null;
+  upcoming_release?: boolean;
+  _links?: { self?: string };
+}
+
+/** GitLab releases use the same Markdown notes as GitHub's, so they share the parser. */
+export function parseGitLabReleases(
+  releases: GitLabRelease[],
+  options: ParseGitHubReleasesOptions = {},
+): Release[] {
+  return parseGitHubReleases(
+    releases.map((r) => ({
+      tag_name: r.tag_name,
+      name: r.name,
+      body: r.description,
+      published_at: r.released_at,
+      html_url: r._links?.self,
+      prerelease: r.upcoming_release,
+    })),
+    options,
+  );
+}

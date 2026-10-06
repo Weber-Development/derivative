@@ -27,9 +27,13 @@ description: derivative.config.json and CLI options.
 
 | Key | CLI | Default | Meaning |
 |---|---|---|---|
-| `source` | `--source` | `changelog` if the file exists, else `github` if `repo` is set, else `git` | Where releases come from |
+| `source` | `--source` | `changelog` if the file exists, else `github` if `repo` is set, else `gitlab` if `project` is set, else `git` | Where releases come from |
 | `repo` | `--repo` | | github: `owner/name`, uses `GITHUB_TOKEN` when set |
-| `includePrereleases` | `--prereleases` | `false` | github: keep pre-releases |
+| `project` | `--project` | | gitlab: project path (`group/name`) or numeric id, uses `GITLAB_TOKEN` when set |
+| `gitlabUrl` | `--gitlab-url` | `https://gitlab.com` | gitlab: base URL of a self-managed instance |
+| `includePrereleases` | `--prereleases` | `false` | github, gitlab: keep pre-releases (GitLab: upcoming releases) |
+| `packages` | `--package` (repeatable) | all | Monorepos: keep only these packages, a trailing `*` matches a prefix |
+| `excludePackages` | `--exclude-package` (repeatable) | none | Monorepos: drop these packages, applied after `packages` |
 | `changelog` | `--changelog` (repeatable) | `CHANGELOG.md` | One path or a list for monorepos |
 | `tagPattern` | `--tag-pattern` | tags containing a version | git: regular expression for release tags |
 | `types` | | `feat`, `fix`, `perf`, `security`, `deprecate`, `revert` | git: commit type → entry type |

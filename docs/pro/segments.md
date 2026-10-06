@@ -50,6 +50,47 @@ export const GET = createFeedHandler({
 Set the widget's `src` to this route. Responses carry `cache-control: private, no-cache` so a
 shared cache never serves one user's feed to another.
 
+## Translations
+
+Publish the changelog in more languages. `translate` sends the titles, summaries and entries of a
+feed to a translation provider with your own API key and writes one feed per language:
+
+```sh
+export DERIVATIVE_TRANSLATE_KEY=...      # your provider key, never committed
+npx derivative-segments translate --feed public/changelog.json --to de,fr,it --provider deepl --keep "Acme"
+```
+
+| Option | |
+|---|---|
+| `--provider` | `deepl`, `openai` (any OpenAI-compatible endpoint) or `anthropic`. |
+| `--model` | Required for `openai` and `anthropic`. |
+| `--base-url` | Endpoint of an OpenAI-compatible service, for example a local Ollama (`http://localhost:11434/v1`). |
+| `--from` | Language of the feed. Default: the provider detects it. |
+| `--formality` | DeepL only: `more` or `less`. |
+| `--keep` | Comma-separated terms that stay as they are, such as product names. |
+| `--cache` | File that remembers translations. Default `.derivative-translations.json`. |
+| `--out-dir` | Where `changelog.<lang>.json` is written. Default `public`. |
+| `--dry-run` | Shows how many texts and characters would be sent and calls nothing. |
+
+Ids, versions, dates, scopes and links never change. Inline code, link targets, URLs and the `--keep`
+terms are protected, so a translation cannot break them. If a text's protected parts come back
+damaged, that text keeps its original wording, is not cached, and the command exits with 1, so CI
+notices and the next run tries again.
+
+Commit the cache file: a run then sends only new or changed texts, which keeps the cost per release
+close to zero. The file is plain JSON, so you can correct single sentences by hand. Machine
+translation is good but not perfect, so have the languages that matter to you read over the first
+run. Point the widget at the file for the reader's language:
+
+```html
+<derivative-widget src="/changelog.de.json" lang="de"></derivative-widget>
+```
+
+In code, `translateFeed(feed, { to, translator, cache, keep })` returns the translated feed and
+`stats` (`translated`, `cached`, `fallback`, `characters`). The translators are `deeplTranslator`,
+`openAiTranslator` and `anthropicTranslator`; a translator is one function, so another provider is
+a few lines. Your texts go to the provider you choose, under your account and its terms.
+
 ## Static sites
 
 ```sh

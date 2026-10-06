@@ -8,8 +8,8 @@ infrastructure and send nothing to us.
 
 | Package | What it does |
 |---|---|
-| [`derivative-insights`](/derivative/docs/pro/insights) | Shows how often the panel is opened, which releases are read and which links are clicked. No cookies, no visitor IDs. |
-| [`derivative-segments`](/derivative/docs/pro/segments) | Shows entries only to certain plans or roles, and publishes releases on a schedule. |
+| [`derivative-insights`](/derivative/docs/pro/insights) | Shows how often the panel is opened, which releases are read and which links are clicked. Readers can vote whether a release helped. No cookies, no visitor IDs. |
+| [`derivative-segments`](/derivative/docs/pro/segments) | Shows entries only to certain plans or roles, publishes releases on a schedule and translates the feed into more languages. |
 | [`derivative-announce`](/derivative/docs/pro/announce) | Sends an e-mail digest to a subscriber list with double opt-in (Resend, Postmark) and posts releases to Slack, Teams, Discord, Mattermost, Google Chat, Mastodon or Bluesky. |
 
 The packages read the same `changelog.json` the free CLI writes. They do not depend on

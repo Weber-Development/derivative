@@ -24,6 +24,33 @@ Three events are sent: `open` (the panel opened, with the number of unread relea
 reader caught up) and `click` (a link inside a release). Query strings and fragments are removed
 from every URL before it leaves the browser and again on the server.
 
+## Reactions
+
+Ask readers whether a release was useful. `addReactions` puts a "Was this helpful?" vote (Yes and
+No, in English, German, French or Italian) under every release in the widget and sends each vote to
+the same endpoint:
+
+```ts
+import { addReactions, trackInsights } from "@weber-development/derivative-insights";
+
+trackInsights(document, { endpoint: "/api/derivative-insights" });
+addReactions(document, { endpoint: "/api/derivative-insights" });
+```
+
+| Option | Default | |
+|---|---|---|
+| `endpoint` | required | The same route as for `trackInsights`. |
+| `messages` | by language | Replace `question`, `up`, `down` or `thanks`. |
+| `storageKey` | `derivative:reactions` | Where the browser remembers its own votes. |
+| `respectDoNotTrack` | `true` | Sends no votes when the browser sets Do Not Track or Global Privacy Control. |
+
+There is no cookie and no visitor ID. The browser remembers its votes in `localStorage`, and a
+changed vote also names the old one, so it replaces it instead of counting twice. The report and the
+CSV show helpful and not helpful per release, and the report adds the share of helpful votes overall.
+The bar uses the widget's `derivative-render` event, so it needs `@sweberdev/derivative` 0.5.0 or
+later. Its look follows the widget's CSS variables, and the wrapper has `part="reactions"` for your own
+styles.
+
 ## Receive
 
 ```ts

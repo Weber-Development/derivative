@@ -17,7 +17,7 @@ let instances = 0;
  * `label`, `align` (`start` | `end`), `types` (comma-separated entry types to show), `announce`
  * (show a toast once for a new release with a title), `search` (adds a search field to the panel). Events: `derivative-open`,
  * `derivative-close`, `derivative-read`, `derivative-load`, `derivative-error`,
- * `derivative-announce`.
+ * `derivative-announce`, `derivative-render` (the list was drawn; `detail.list` is the element, for extensions that add to each release).
  */
 export class DerivativeWidget extends Base {
   static observedAttributes = [
@@ -164,7 +164,10 @@ export class DerivativeWidget extends Base {
     input?.addEventListener("input", () => {
       this.#query = input.value;
       const list = this.#root?.querySelector<HTMLElement>(".list");
-      if (list) list.innerHTML = this.#listHtml();
+      if (list) {
+        list.innerHTML = this.#listHtml();
+        this.#emit("derivative-render", { list });
+      }
     });
   }
 
@@ -283,6 +286,7 @@ export class DerivativeWidget extends Base {
     if (this.#mode === "inline") {
       root.innerHTML = `<style>${CSS}</style>${this.#searchHtml(t)}<div class="list inline" part="list">${this.#listHtml()}</div>${footer}`;
       this.#bindSearch();
+      this.#emitRender();
       return;
     }
 
@@ -305,6 +309,12 @@ export class DerivativeWidget extends Base {
     root.querySelector(".panel")?.addEventListener("keydown", this.#onKeydown as EventListener);
     this.#bindSearch();
     this.#renderBadge();
+    this.#emitRender();
+  }
+
+  #emitRender(): void {
+    const list = this.#root?.querySelector<HTMLElement>(".list");
+    if (list && (this.#mode === "inline" || this.#open)) this.#emit("derivative-render", { list });
   }
 }
 

@@ -6,7 +6,15 @@
     },
     {
       "label": "Guides",
-      "items": ["guides/sources", "guides/widget", "guides/react", "guides/highlights", "guides/ci"]
+      "items": [
+        "guides/sources",
+        "guides/widget",
+        "guides/react",
+        "guides/vue",
+        "guides/svelte",
+        "guides/highlights",
+        "guides/ci"
+      ]
     },
     {
       "label": "Reference",

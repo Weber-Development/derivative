@@ -106,6 +106,55 @@ ${entries}
 `;
 }
 
+/**
+ * JSON Feed 1.1 (https://jsonfeed.org/version/1.1). Each release is one item with HTML content;
+ * `selfUrl` is the public URL of the JSON Feed file itself.
+ */
+export function renderJsonFeed(
+  feed: Feed,
+  options: RenderOptions & { selfUrl?: string } = {},
+): string {
+  const t = getMessages(options.lang, options.messages);
+  const site = feed.link;
+  const items = feed.releases.map((release) => {
+    const key = releaseKey(release);
+    const url = site ? `${site}#${slug(key)}` : undefined;
+    const html = renderReleases([{ ...release, title: undefined }], {
+      ...options,
+      headingLevel: 2,
+    }).replace(/<h2[^>]*>.*?<\/h2>/, "");
+    return {
+      id: url ?? `urn:derivative:${key}`,
+      ...(url ? { url } : {}),
+      title: release.title ?? release.version ?? t.unreleased,
+      content_html: html,
+      ...(release.summary ? { summary: plainSummary(release.summary) } : {}),
+      ...(release.image ? { image: release.image } : {}),
+      ...(release.date ? { date_published: toDateTime(release.date) } : {}),
+      ...(release.package ? { tags: [release.package] } : {}),
+    };
+  });
+  return `${JSON.stringify(
+    {
+      version: "https://jsonfeed.org/version/1.1",
+      title: feed.title ?? t.allChanges,
+      ...(site ? { home_page_url: site } : {}),
+      ...(options.selfUrl ? { feed_url: options.selfUrl } : {}),
+      ...(options.lang ? { language: options.lang } : {}),
+      items,
+    },
+    null,
+    2,
+  )}\n`;
+}
+
+function plainSummary(text: string): string {
+  return text
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/[*`]/g, "")
+    .trim();
+}
+
 function toDateTime(date: string): string {
   return date.length === 10 ? `${date}T00:00:00Z` : date;
 }

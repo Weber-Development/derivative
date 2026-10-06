@@ -20,7 +20,13 @@ export {
   parseGitHubReleases,
 } from "./parse/github";
 export { type ParseChangelogOptions, parseChangelog } from "./parse/markdown";
-export { type RenderOptions, renderAtom, renderPage, renderReleases } from "./render";
+export {
+  type RenderOptions,
+  renderAtom,
+  renderJsonFeed,
+  renderPage,
+  renderReleases,
+} from "./render";
 export {
   ENTRY_TYPES,
   type Entry,

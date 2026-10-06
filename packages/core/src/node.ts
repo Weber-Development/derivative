@@ -6,7 +6,7 @@ import { createFeed } from "./feed";
 import { type Commit, parseCommits } from "./parse/commits";
 import { type GitHubRelease, parseGitHubReleases } from "./parse/github";
 import { parseChangelog } from "./parse/markdown";
-import { renderAtom, renderPage } from "./render";
+import { renderAtom, renderJsonFeed, renderPage } from "./render";
 import type { EntryType, Feed, Highlights, Release } from "./types";
 
 const run = promisify(execFile);
@@ -37,13 +37,17 @@ export interface DerivativeConfig {
   /** Titles, summaries and images written by a person, keyed by version. */
   highlights?: Highlights;
   /** Where to write. Paths are relative to the config file. */
-  out?: { json?: string; atom?: string; html?: string };
+  out?: { json?: string; atom?: string; html?: string; jsonFeed?: string };
   /** Public URL of the Atom file. */
   atomUrl?: string;
+  /** Public URL of the JSON Feed file. */
+  jsonFeedUrl?: string;
   lang?: string;
 }
 
 export const CONFIG_FILE = "derivative.config.json";
+
+export { detectConfig, type InitResult, init } from "./init";
 
 /** Reads commits with their tags, newest first. */
 export async function readGitCommits(cwd = process.cwd(), range?: string): Promise<Commit[]> {
@@ -197,5 +201,9 @@ export async function writeOutputs(
   await write(out.json, `${JSON.stringify(feed, null, 2)}\n`);
   await write(out.atom, renderAtom(feed, { lang: config.lang, selfUrl: config.atomUrl }));
   await write(out.html, renderPage(feed, { lang: config.lang }));
+  await write(
+    out.jsonFeed,
+    renderJsonFeed(feed, { lang: config.lang, selfUrl: config.jsonFeedUrl }),
+  );
   return written;
 }

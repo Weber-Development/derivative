@@ -9,7 +9,7 @@ There is no service behind it. The feed is a file you deploy with your app, the 
 
 ## What you get
 
-- **`derivative build`**: a CLI that writes `changelog.json`, and optionally an Atom feed and a standalone HTML changelog page.
+- **`derivative build`**: a CLI that writes `changelog.json`, and optionally an Atom feed, a JSON Feed and a standalone HTML changelog page. `derivative init` sets it up for a project.
 - **`<derivative-widget>`**: a framework-free web component (about 6 kB gzipped) with a popover and an inline mode, keyboard support, dark mode and labels in English, German, French and Italian.
 - **`@sweberdev/derivative-react`**: a `<WhatsNew>` component, a `useChangelog` hook for your own UI and an unstyled `<ChangelogList>`.
 - **Highlights**: give a release a title, a short summary and an image without touching the generated entries.

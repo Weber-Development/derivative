@@ -16,9 +16,11 @@ description: derivative.config.json and CLI options.
   "out": {
     "json": "public/changelog.json",
     "atom": "public/changelog.xml",
+    "jsonFeed": "public/feed.json",
     "html": "public/changelog.html"
   },
   "atomUrl": "https://acme.ch/changelog.xml",
+  "jsonFeedUrl": "https://acme.ch/feed.json",
   "highlights": {}
 }
 ```
@@ -39,6 +41,10 @@ description: derivative.config.json and CLI options.
 | `lang` | `--lang` | `en` | Labels and dates in the Atom feed and HTML page |
 | `out.json` | `--out` | `public/changelog.json` | |
 | `out.atom` | `--atom` | | Atom feed |
+| `out.jsonFeed` | `--json-feed` | | [JSON Feed 1.1](https://jsonfeed.org), one item per release with HTML content |
 | `out.html` | `--html` | | Standalone HTML page |
 | `atomUrl` | | | Public URL of the Atom file (its `rel="self"` link) |
+| `jsonFeedUrl` | | | Public URL of the JSON Feed file (its `feed_url`) |
+
+`derivative init` writes a starting config for the current project: `changelog` as source if a `CHANGELOG.md` or `.changeset` folder exists, otherwise `git`, and `changelog.json` plus `changelog.xml` in `public/` (or `static/` for SvelteKit).
 | `highlights` | | | See [Highlights](../guides/highlights.md) |

@@ -23,7 +23,8 @@ npx derivative build            # writes public/changelog.json
 - Web component of about 6 kB gzipped: popover or inline, keyboard and screen reader support, dark mode, EN, DE, FR, IT
 - Unread state in `localStorage`, nothing leaves the browser
 - Highlights: titles, summaries and images for the releases that matter
-- Atom feed and a standalone HTML page from the same data
+- Atom feed, JSON Feed and a standalone HTML page from the same data
+- `derivative init` sets up config and build script in one step
 
 Docs and live demo: [packages.sweber.dev/derivative](https://packages.sweber.dev/derivative)
 

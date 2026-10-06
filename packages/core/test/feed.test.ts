@@ -108,3 +108,44 @@ describe("rendering", () => {
     expect(atom.match(/<entry>/g)).toHaveLength(3);
   });
 });
+
+describe("renderJsonFeed", () => {
+  it("writes a valid JSON Feed 1.1", async () => {
+    const { renderJsonFeed } = await import("../src");
+    const json = JSON.parse(
+      renderJsonFeed(
+        {
+          version: 1,
+          title: "Acme",
+          link: "https://acme.ch/changelog",
+          releases: [
+            {
+              id: "1.2.0",
+              version: "1.2.0",
+              date: "2026-10-01",
+              title: "Dark mode",
+              summary: "Now with **dark** mode.",
+              entries: [{ type: "feature", text: "Dark mode" }],
+            },
+          ],
+        },
+        { selfUrl: "https://acme.ch/feed.json", lang: "de" },
+      ),
+    );
+    expect(json).toMatchObject({
+      version: "https://jsonfeed.org/version/1.1",
+      title: "Acme",
+      home_page_url: "https://acme.ch/changelog",
+      feed_url: "https://acme.ch/feed.json",
+      language: "de",
+    });
+    expect(json.items[0]).toMatchObject({
+      id: "https://acme.ch/changelog#1-2-0",
+      url: "https://acme.ch/changelog#1-2-0",
+      title: "Dark mode",
+      summary: "Now with dark mode.",
+      date_published: "2026-10-01T00:00:00Z",
+    });
+    expect(json.items[0].content_html).toContain("Dark mode");
+  });
+});

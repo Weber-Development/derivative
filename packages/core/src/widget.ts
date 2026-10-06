@@ -285,8 +285,8 @@ export class DerivativeWidget extends Base {
       ? `<p class="toast-text">${inlineMarkdown(release.summary.split(/\n\s*\n/)[0] ?? "")}</p>`
       : "";
     return `<div class="toast" part="toast" role="status" data-align="${this.getAttribute("align") === "start" ? "start" : "end"}">
-  <p class="toast-title"><span class="dv-type">${escapeHtml(t.types.feature)}</span> ${escapeHtml(release.title ?? "")}</p>${summary}
-  <div class="toast-actions"><button class="toast-show" type="button">${escapeHtml(t.show)}</button><button class="toast-dismiss" type="button" aria-label="${escapeHtml(t.dismiss)}">×</button></div>
+  <p class="toast-title" part="toast-title"><span class="dv-type">${escapeHtml(t.types.feature)}</span> ${escapeHtml(release.title ?? "")}</p>${summary}
+  <div class="toast-actions"><button class="toast-show" part="toast-action" type="button">${escapeHtml(t.show)}</button><button class="toast-dismiss" part="toast-dismiss" type="button" aria-label="${escapeHtml(t.dismiss)}">×</button></div>
 </div>`;
   }
 
@@ -324,7 +324,7 @@ export class DerivativeWidget extends Base {
   <span class="badge" part="badge" aria-hidden="true" hidden></span>
 </button>
 <section class="panel" part="panel" id="${this.#id}" role="dialog" aria-label="${escapeHtml(label)}" tabindex="-1" data-align="${this.getAttribute("align") === "start" ? "start" : "end"}" ${this.#open ? "" : "hidden"}>
-  <header><h2>${escapeHtml(label)}</h2><button class="close" type="button" aria-label="${escapeHtml(t.close)}">×</button></header>
+  <header part="header"><h2 part="title">${escapeHtml(label)}</h2><button class="close" part="close" type="button" aria-label="${escapeHtml(t.close)}">×</button></header>
   ${this.#open ? this.#searchHtml(t) : ""}
   <div class="list" part="list">${this.#open ? this.#listHtml() : ""}</div>
   ${footer}
@@ -376,6 +376,13 @@ const CSS = `
   --dv-good: #166534;
   --dv-warn: #9a3412;
   --dv-radius: 10px;
+  --dv-button-radius: 999px;
+  --dv-button-bg: var(--dv-bg);
+  --dv-button-fg: inherit;
+  --dv-badge-fg: var(--dv-bg);
+  --dv-shadow: 0 12px 32px rgb(0 0 0 / .14);
+  --dv-max-height: min(70vh, 560px);
+  --dv-z: 1000;
   --dv-width: 380px;
   --dv-font: system-ui, -apple-system, "Segoe UI", sans-serif;
   position: relative;
@@ -391,22 +398,22 @@ const CSS = `
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .trigger {
   position: relative; display: inline-flex; align-items: center; gap: .4rem;
-  font: inherit; font-size: .875rem; color: inherit; background: var(--dv-bg);
-  border: 1px solid var(--dv-border); border-radius: 999px; padding: .4rem .8rem; cursor: pointer;
+  font: inherit; font-size: .875rem; color: var(--dv-button-fg); background: var(--dv-button-bg);
+  border: 1px solid var(--dv-border); border-radius: var(--dv-button-radius); padding: .4rem .8rem; cursor: pointer;
 }
 .trigger:hover { border-color: var(--dv-accent); }
 .trigger:focus-visible, .close:focus-visible, .panel:focus-visible, a:focus-visible { outline: 2px solid var(--dv-accent); outline-offset: 2px; }
 .badge {
   min-width: 1.25rem; height: 1.25rem; padding: 0 .3rem; box-sizing: border-box; border-radius: 999px;
-  background: var(--dv-accent); color: var(--dv-bg); font-size: .7rem; font-weight: 700;
+  background: var(--dv-accent); color: var(--dv-badge-fg); font-size: .7rem; font-weight: 700;
   display: inline-grid; place-items: center;
 }
 .badge[hidden] { display: none; }
 .panel {
-  position: absolute; top: calc(100% + .5rem); z-index: 1000; width: min(var(--dv-width), calc(100vw - 2rem));
-  max-height: min(70vh, 560px); overflow: auto; box-sizing: border-box;
+  position: absolute; top: calc(100% + .5rem); z-index: var(--dv-z); width: min(var(--dv-width), calc(100vw - 2rem));
+  max-height: var(--dv-max-height); overflow: auto; box-sizing: border-box;
   background: var(--dv-bg); color: var(--dv-fg); border: 1px solid var(--dv-border);
-  border-radius: var(--dv-radius); box-shadow: 0 12px 32px rgb(0 0 0 / .14); padding: 0 1rem 1rem;
+  border-radius: var(--dv-radius); box-shadow: var(--dv-shadow); padding: 0 1rem 1rem;
 }
 .panel[data-align="end"] { inset-inline-end: 0; }
 .panel[data-align="start"] { inset-inline-start: 0; }
@@ -436,9 +443,9 @@ a { color: var(--dv-accent); }
 .all { display: inline-block; margin: .75rem 0 .25rem; font-size: .875rem; }
 .state { color: var(--dv-muted); font-size: .875rem; min-height: 1.5rem; }
 .toast {
-  position: absolute; top: calc(100% + .5rem); z-index: 999; width: min(300px, calc(100vw - 2rem)); box-sizing: border-box;
+  position: absolute; top: calc(100% + .5rem); z-index: calc(var(--dv-z) - 1); width: min(300px, calc(100vw - 2rem)); box-sizing: border-box;
   background: var(--dv-bg); color: var(--dv-fg); border: 1px solid var(--dv-border); border-inline-start: 3px solid var(--dv-accent);
-  border-radius: var(--dv-radius); box-shadow: 0 8px 24px rgb(0 0 0 / .12); padding: .7rem .8rem; font-size: .875rem;
+  border-radius: var(--dv-radius); box-shadow: var(--dv-shadow); padding: .7rem .8rem; font-size: .875rem;
 }
 .toast[data-align="end"] { inset-inline-end: 0; }
 .toast[data-align="start"] { inset-inline-start: 0; }

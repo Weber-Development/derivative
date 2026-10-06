@@ -113,8 +113,7 @@ async function open(
 }
 
 async function contrast(p: Page) {
-  // Mid-animation colours are blended with the background, so let opening animations finish.
-  await p.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)));
+  // Callers use reduced motion: mid-animation colours are blended with the background.
   await p.addScriptTag({ content: axeSource });
   return p.evaluate(async () => {
     // @ts-expect-error axe is injected above
@@ -161,7 +160,10 @@ describe("widget in Chromium", () => {
   it.each(["light", "dark"] as const)(
     "has sufficient colour contrast in %s mode",
     async (scheme) => {
-      const p = await open(`/contrast-${scheme}`, page(`search announce`), { colorScheme: scheme });
+      const p = await open(`/contrast-${scheme}`, page(`search announce`), {
+        colorScheme: scheme,
+        reducedMotion: "reduce",
+      });
       await p.locator("derivative-widget >> role=button").first().click();
       await p.locator("derivative-widget >> role=dialog").waitFor();
       expect(await contrast(p)).toEqual([]);
@@ -170,7 +172,10 @@ describe("widget in Chromium", () => {
   );
 
   it("has sufficient contrast when theme is forced against the system setting", async () => {
-    const p = await open("/forced", page(`theme="dark"`), { colorScheme: "light" });
+    const p = await open("/forced", page(`theme="dark"`), {
+      colorScheme: "light",
+      reducedMotion: "reduce",
+    });
     await p.locator("derivative-widget >> role=button").first().click();
     await p.locator("derivative-widget >> role=dialog").waitFor();
     expect(await contrast(p)).toEqual([]);
@@ -212,6 +217,53 @@ describe("widget in Chromium", () => {
         )?.getAnimations().length,
     );
     expect(animations ?? 0).toBe(0);
+    await p.context().close();
+  });
+
+  it("follows custom properties and ::part() rules from the page", async () => {
+    const themed = page("").replace(
+      "</head>",
+      `<style>derivative-widget{--dv-button-radius:4px;--dv-accent:rgb(1, 2, 3);--dv-z:77}
+derivative-widget::part(entry){outline:3px solid rgb(9, 8, 7)}
+derivative-widget::part(release-title){letter-spacing:5px}</style></head>`,
+    );
+    const p = await open("/themed", themed);
+    await p.locator("derivative-widget >> role=button").first().click();
+    await p.locator("derivative-widget >> role=dialog").waitFor();
+    const styles = await p.evaluate(() => {
+      const root = document.querySelector("derivative-widget")?.shadowRoot;
+      const style = (selector: string) => {
+        const el = root?.querySelector(selector);
+        return el ? getComputedStyle(el) : undefined;
+      };
+      return {
+        radius: style(".trigger")?.borderTopLeftRadius,
+        badge: style(".badge")?.backgroundColor,
+        z: style(".panel")?.zIndex,
+        outline: style(".dv-entry")?.outlineColor,
+        spacing: style(".dv-title")?.letterSpacing,
+      };
+    });
+    expect(styles).toEqual({
+      radius: "4px",
+      badge: "rgb(1, 2, 3)",
+      z: "77",
+      outline: "rgb(9, 8, 7)",
+      spacing: "5px",
+    });
+    await p.context().close();
+  });
+
+  it("keeps the announcement toast inside the viewport on right-to-left pages", async () => {
+    const p = await open("/rtl-toast", page("announce", "rtl"), {
+      viewport: { width: 400, height: 700 },
+    });
+    const toast = p.locator("derivative-widget >> .toast");
+    await toast.waitFor();
+    await p.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)));
+    const box = await toast.boundingBox();
+    expect(box?.x ?? -1).toBeGreaterThanOrEqual(0);
+    expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(400);
     await p.context().close();
   });
 });

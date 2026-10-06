@@ -102,5 +102,8 @@
     "tsup": "^8.5.1",
     "typescript": "^5.9.0",
     "vitest": "^5.0.3"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

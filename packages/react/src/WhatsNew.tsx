@@ -25,6 +25,8 @@ export interface WhatsNewProps {
   search?: boolean;
   /** Monorepo feeds: show only these packages. A trailing `*` matches a prefix. */
   packages?: string[];
+  /** Level of the release headings, 2 to 6. Default 3 in the panel, 2 for `mode="inline"`. */
+  headingLevel?: 2 | 3 | 4 | 5 | 6;
   messages?: Partial<Messages>;
   className?: string;
   style?: CSSProperties;
@@ -78,6 +80,7 @@ export function WhatsNew(props: WhatsNewProps) {
       announce={props.announce ? "" : undefined}
       search={props.search ? "" : undefined}
       package={props.packages?.join(",")}
+      heading-level={props.headingLevel === undefined ? undefined : String(props.headingLevel)}
       className={props.className}
       style={props.style}
     >

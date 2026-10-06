@@ -113,8 +113,7 @@ async function open(
 }
 
 async function contrast(p: Page) {
-  // Mid-animation colours are blended with the background, so let opening animations finish.
-  await p.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)));
+  // Callers use reduced motion: mid-animation colours are blended with the background.
   await p.addScriptTag({ content: axeSource });
   return p.evaluate(async () => {
     // @ts-expect-error axe is injected above
@@ -161,7 +160,10 @@ describe("widget in Chromium", () => {
   it.each(["light", "dark"] as const)(
     "has sufficient colour contrast in %s mode",
     async (scheme) => {
-      const p = await open(`/contrast-${scheme}`, page(`search announce`), { colorScheme: scheme });
+      const p = await open(`/contrast-${scheme}`, page(`search announce`), {
+        colorScheme: scheme,
+        reducedMotion: "reduce",
+      });
       await p.locator("derivative-widget >> role=button").first().click();
       await p.locator("derivative-widget >> role=dialog").waitFor();
       expect(await contrast(p)).toEqual([]);
@@ -170,7 +172,10 @@ describe("widget in Chromium", () => {
   );
 
   it("has sufficient contrast when theme is forced against the system setting", async () => {
-    const p = await open("/forced", page(`theme="dark"`), { colorScheme: "light" });
+    const p = await open("/forced", page(`theme="dark"`), {
+      colorScheme: "light",
+      reducedMotion: "reduce",
+    });
     await p.locator("derivative-widget >> role=button").first().click();
     await p.locator("derivative-widget >> role=dialog").waitFor();
     expect(await contrast(p)).toEqual([]);

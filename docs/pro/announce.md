@@ -61,7 +61,7 @@ passwords; never use the account password. The handle can also come from
 
 The digest above leaves the sending to you. For a real subscriber list, Derivative Pro runs the
 whole cycle with double opt-in: sign-up form, confirmation e-mail, one-click unsubscribe and the
-sending itself, through Resend or Postmark. There is no third-party list to maintain and no
+sending itself, through Resend, Postmark, Amazon SES or any SMTP server. There is no third-party list to maintain and no
 tracking: a subscriber is an e-mail address, a language and the timestamps of the request and
 the confirmation.
 
@@ -117,7 +117,14 @@ DERIVATIVE_SUBSCRIBE_SECRET=... DERIVATIVE_RESEND_KEY=... npx derivative-announc
 
 Each confirmed subscriber gets one e-mail with a personal unsubscribe link and the
 `List-Unsubscribe` headers. `--provider postmark` uses `DERIVATIVE_POSTMARK_TOKEN` and the
-`broadcast` message stream. `--dry-run` counts the recipients. With `--state`, each release goes
+`broadcast` message stream. `--provider ses` uses Amazon SES with `AWS_ACCESS_KEY_ID`,
+`AWS_SECRET_ACCESS_KEY` (and `AWS_SESSION_TOKEN`) and `AWS_REGION`; the AWS user needs only
+`ses:SendEmail`, and requests are signed in the package, without the AWS SDK.
+`--provider smtp` uses any SMTP server through `DERIVATIVE_SMTP_URL`, for example
+`smtps://user:password@smtp.example.com:465` (TLS from the start) or
+`smtp://user:password@smtp.example.com:587` (STARTTLS); percent-encode special characters in the
+password. TLS is required: the password is never sent over a connection without it. In code:
+`sesSender(credentials, { region })` and, from `/node`, `smtpSender({ host, port, user, pass })`. `--dry-run` counts the recipients. With `--state`, each release goes
 out once. Addresses that fail are listed and the exit code is 1; the others have their mail.
 In code, call `sendDigest({ releases, brand, store, send, secret, baseUrl, from })`.
 

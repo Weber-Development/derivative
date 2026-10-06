@@ -21,6 +21,8 @@ export interface WhatsNewProps {
   types?: EntryType[];
   /** Show a toast once when a new release with a title arrives. */
   announce?: boolean;
+  /** Add a search field to the panel. */
+  search?: boolean;
   messages?: Partial<Messages>;
   className?: string;
   style?: CSSProperties;
@@ -72,6 +74,7 @@ export function WhatsNew(props: WhatsNewProps) {
       theme={props.theme}
       types={props.types?.join(",")}
       announce={props.announce ? "" : undefined}
+      search={props.search ? "" : undefined}
       className={props.className}
       style={props.style}
     >
@@ -97,6 +100,7 @@ declare module "react" {
         theme?: string;
         types?: string;
         announce?: string;
+        search?: string;
       };
     }
   }

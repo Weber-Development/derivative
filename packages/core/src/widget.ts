@@ -15,12 +15,22 @@ let instances = 0;
  *
  * Attributes: `src`, `lang`, `mode` (`popover` | `inline`), `limit`, `storage-key`, `href`,
  * `label`, `align` (`start` | `end`), `types` (comma-separated entry types to show), `announce`
- * (show a toast once for a new release with a title). Events: `derivative-open`,
+ * (show a toast once for a new release with a title), `search` (adds a search field to the panel). Events: `derivative-open`,
  * `derivative-close`, `derivative-read`, `derivative-load`, `derivative-error`,
  * `derivative-announce`.
  */
 export class DerivativeWidget extends Base {
-  static observedAttributes = ["src", "lang", "mode", "limit", "label", "href", "align", "types"];
+  static observedAttributes = [
+    "src",
+    "lang",
+    "mode",
+    "limit",
+    "label",
+    "href",
+    "align",
+    "types",
+    "search",
+  ];
 
   /** Override any UI text. */
   messages: Partial<Messages> | undefined;
@@ -32,6 +42,7 @@ export class DerivativeWidget extends Base {
   #id = `dv-${++instances}`;
   #abort: AbortController | undefined;
   #toast: Release | undefined;
+  #query = "";
 
   get feed(): Feed | undefined {
     return this.#feed;
@@ -138,6 +149,25 @@ export class DerivativeWidget extends Base {
     return set.size ? set : undefined;
   }
 
+  get #searchable(): boolean {
+    return this.hasAttribute("search");
+  }
+
+  #searchHtml(t: Messages): string {
+    return this.#searchable
+      ? `<input class="search" part="search" type="search" autocomplete="off" placeholder="${escapeHtml(t.search)}" aria-label="${escapeHtml(t.search)}" value="${escapeHtml(this.#query)}">`
+      : "";
+  }
+
+  #bindSearch(): void {
+    const input = this.#root?.querySelector<HTMLInputElement>(".search");
+    input?.addEventListener("input", () => {
+      this.#query = input.value;
+      const list = this.#root?.querySelector<HTMLElement>(".list");
+      if (list) list.innerHTML = this.#listHtml();
+    });
+  }
+
   get #mode(): "popover" | "inline" {
     return this.getAttribute("mode") === "inline" ? "inline" : "popover";
   }
@@ -198,8 +228,12 @@ export class DerivativeWidget extends Base {
           .map((r) => ({ ...r, entries: r.entries.filter((e) => types.has(e.type)) }))
           .filter((r) => r.entries.length > 0 || r.title || r.summary)
       : this.#feed.releases;
-    const releases = filtered.slice(0, Number.isNaN(limit) ? 10 : limit);
-    if (releases.length === 0) return `<p class="state">${escapeHtml(t.empty)}</p>`;
+    const query = this.#searchable ? this.#query.trim().toLowerCase() : "";
+    const matching = query ? filtered.filter((r) => matches(r, query)) : filtered;
+    const releases = query ? matching : matching.slice(0, Number.isNaN(limit) ? 10 : limit);
+    if (releases.length === 0) {
+      return `<p class="state">${escapeHtml(query ? t.noResults : t.empty)}</p>`;
+    }
     const unread = new Set(getUnread(this.#feed, this.#store().get()).map(releaseKey));
     const html = renderReleases(releases, {
       lang: this.getAttribute("lang") ?? undefined,
@@ -247,7 +281,8 @@ export class DerivativeWidget extends Base {
       : "";
 
     if (this.#mode === "inline") {
-      root.innerHTML = `<style>${CSS}</style><div class="list inline" part="list">${this.#listHtml()}</div>${footer}`;
+      root.innerHTML = `<style>${CSS}</style>${this.#searchHtml(t)}<div class="list inline" part="list">${this.#listHtml()}</div>${footer}`;
+      this.#bindSearch();
       return;
     }
 
@@ -259,6 +294,7 @@ export class DerivativeWidget extends Base {
 </button>
 <section class="panel" part="panel" id="${this.#id}" role="dialog" aria-label="${escapeHtml(label)}" tabindex="-1" data-align="${this.getAttribute("align") === "start" ? "start" : "end"}" ${this.#open ? "" : "hidden"}>
   <header><h2>${escapeHtml(label)}</h2><button class="close" type="button" aria-label="${escapeHtml(t.close)}">×</button></header>
+  ${this.#open ? this.#searchHtml(t) : ""}
   <div class="list" part="list">${this.#open ? this.#listHtml() : ""}</div>
   ${footer}
 </section>${this.#toastHtml(t)}`;
@@ -267,8 +303,24 @@ export class DerivativeWidget extends Base {
     root.querySelector(".toast-show")?.addEventListener("click", () => this.show());
     root.querySelector(".toast-dismiss")?.addEventListener("click", () => this.dismissToast());
     root.querySelector(".panel")?.addEventListener("keydown", this.#onKeydown as EventListener);
+    this.#bindSearch();
     this.#renderBadge();
   }
+}
+
+/** True when the query appears in the release's version, title, summary or any entry. */
+function matches(release: Release, query: string): boolean {
+  const haystack = [
+    release.version,
+    release.package,
+    release.title,
+    release.summary,
+    ...release.entries.flatMap((e) => [e.text, e.details, e.scope]),
+  ]
+    .filter(Boolean)
+    .join("\n")
+    .toLowerCase();
+  return haystack.includes(query);
 }
 
 /** Registers `<derivative-widget>` (or another tag name). Safe to call more than once and on the server. */
@@ -325,6 +377,8 @@ const CSS = `
 header { position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between; padding: .85rem 0 .5rem; background: var(--dv-bg); }
 h2 { margin: 0; font-size: 1rem; }
 .close { font: inherit; font-size: 1.25rem; line-height: 1; background: none; border: 0; color: var(--dv-muted); cursor: pointer; padding: .25rem .4rem; border-radius: 6px; }
+.search { display: block; width: 100%; box-sizing: border-box; margin: 0 0 .25rem; font: inherit; font-size: .875rem; color: inherit; background: var(--dv-bg); border: 1px solid var(--dv-border); border-radius: 8px; padding: .45rem .65rem; }
+.search:focus-visible { outline: 2px solid var(--dv-accent); outline-offset: 1px; }
 .dv-release { padding: .85rem 0; border-top: 1px solid var(--dv-border); }
 .dv-release[data-unread] .dv-title::after { content: ""; display: inline-block; width: .45rem; height: .45rem; margin-left: .4rem; border-radius: 50%; background: var(--dv-accent); vertical-align: middle; }
 .dv-title { margin: 0; font-size: .95rem; }

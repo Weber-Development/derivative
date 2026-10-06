@@ -10,7 +10,7 @@ infrastructure and send nothing to us.
 |---|---|
 | [`derivative-insights`](/derivative/docs/pro/insights) | Shows how often the panel is opened, which releases are read and which links are clicked. No cookies, no visitor IDs. |
 | [`derivative-segments`](/derivative/docs/pro/segments) | Shows entries only to certain plans or roles, and publishes releases on a schedule. |
-| [`derivative-announce`](/derivative/docs/pro/announce) | Sends an e-mail digest of new releases and posts them to Slack, Teams, Discord, Mattermost, Google Chat, Mastodon or Bluesky. |
+| [`derivative-announce`](/derivative/docs/pro/announce) | Sends an e-mail digest to a subscriber list with double opt-in (Resend, Postmark) and posts releases to Slack, Teams, Discord, Mattermost, Google Chat, Mastodon or Bluesky. |
 
 The packages read the same `changelog.json` the free CLI writes. They do not depend on
 `@sweberdev/derivative` and can be used with any feed in that format.

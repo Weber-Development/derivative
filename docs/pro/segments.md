@@ -91,6 +91,28 @@ In code, `translateFeed(feed, { to, translator, cache, keep })` returns the tran
 `openAiTranslator` and `anthropicTranslator`; a translator is one function, so another provider is
 a few lines. Your texts go to the provider you choose, under your account and its terms.
 
+## Feature flags
+
+Tie entries to the flags you already use. Mark an entry with the flag key, `Export to DATEV [for: datev-export]`, and pass a flag provider to the handler. Users who have the flag on see the entry, everyone else does not:
+
+```ts
+import { createFeedHandler, unleashFlags } from "@weber-development/derivative-segments";
+
+const flags = unleashFlags({ url: "https://unleash.acme.example", token: process.env.UNLEASH_FRONTEND_TOKEN! });
+
+export const GET = createFeedHandler({
+  feed: () => loadFeed(),
+  rules,
+  viewer: async (request) => {
+    const session = await getSession(request);
+    return { userId: session?.id, audiences: session?.roles ?? [] };
+  },
+  flags,
+});
+```
+
+`unleashFlags({ url, token })` reads the Unleash frontend API, `launchDarklyFlags({ clientSideId })` the LaunchDarkly client-side API (boolean flags that evaluate to `true`). Any function `(context) => Promise<string[]>` works too, for example one that reads your own table. Flags are added to the viewer's audiences, so they combine with roles and rules. Results are cached for 30 seconds per user (`cacheSeconds` changes it, `0` turns it off). If the provider is down, the feed is served without flagged entries instead of failing. Pass `flagContext: (request, viewer) => ({ userId, properties: { plan: "pro" } })` to hand extra targeting properties to the provider. Keep the keys of unreleased features out of public feeds: as with all segments, this filters what is shown, it is not access control.
+
 ## Static sites
 
 ```sh

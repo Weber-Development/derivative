@@ -57,6 +57,22 @@ hashtags as real tags. Create an app password under Settings → Privacy and sec
 passwords; never use the account password. The handle can also come from
 `DERIVATIVE_BLUESKY_HANDLE`.
 
+## LinkedIn
+
+```sh
+DERIVATIVE_LINKEDIN_TOKEN=... npx derivative-announce post --to linkedin \
+  --author urn:li:organization:123456 --feed public/changelog.json --product "Acme" \
+  --hashtag changelog --state .announce-linkedin.json
+```
+
+Each release becomes one post on your company page, with the summary and entries as text and the
+changelog as a link card. Texts are escaped so characters like `(`, `#` or `_` show up as typed. The
+access token needs the `w_organization_social` scope (or `w_member_social` for a personal profile with
+`urn:li:person:…`); LinkedIn issues it after you add the "Share on LinkedIn" product to your app.
+The author can also come from `DERIVATIVE_LINKEDIN_AUTHOR`. The API version header is set to last
+month's `YYYYMM`; pin another one with `DERIVATIVE_LINKEDIN_VERSION`. Tokens expire (60 days by
+default), so renew the secret in your CI before then. Use `--dry-run` to see the post first.
+
 ## Subscribers
 
 The digest above leaves the sending to you. For a real subscriber list, Derivative Pro runs the

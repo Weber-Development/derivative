@@ -1,0 +1,17 @@
+{
+  "name": "derivative-example-vite",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "changelog": "derivative build --out public/changelog.json --title Acme --link /",
+    "dev": "pnpm changelog && vite",
+    "build": "pnpm changelog && vite build"
+  },
+  "dependencies": {
+    "@sweberdev/derivative": "^0.6.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "vite": "^7.0.0"
+  }
+}

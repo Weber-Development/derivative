@@ -373,8 +373,8 @@ const CSS = `
   --dv-fg: #16181d;
   --dv-muted: #5c6370;
   --dv-border: #e3e5ea;
-  --dv-good: #15803d;
-  --dv-warn: #c2410c;
+  --dv-good: #166534;
+  --dv-warn: #9a3412;
   --dv-radius: 10px;
   --dv-width: 380px;
   --dv-font: system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -408,8 +408,8 @@ const CSS = `
   background: var(--dv-bg); color: var(--dv-fg); border: 1px solid var(--dv-border);
   border-radius: var(--dv-radius); box-shadow: 0 12px 32px rgb(0 0 0 / .14); padding: 0 1rem 1rem;
 }
-.panel[data-align="end"] { right: 0; }
-.panel[data-align="start"] { left: 0; }
+.panel[data-align="end"] { inset-inline-end: 0; }
+.panel[data-align="start"] { inset-inline-start: 0; }
 .panel[hidden] { display: none; }
 header { position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between; padding: .85rem 0 .5rem; background: var(--dv-bg); }
 h2 { margin: 0; font-size: 1rem; }
@@ -417,14 +417,14 @@ h2 { margin: 0; font-size: 1rem; }
 .search { display: block; width: 100%; box-sizing: border-box; margin: 0 0 .25rem; font: inherit; font-size: .875rem; color: inherit; background: var(--dv-bg); border: 1px solid var(--dv-border); border-radius: 8px; padding: .45rem .65rem; }
 .search:focus-visible { outline: 2px solid var(--dv-accent); outline-offset: 1px; }
 .dv-release { padding: .85rem 0; border-top: 1px solid var(--dv-border); }
-.dv-release[data-unread] .dv-title::after { content: ""; display: inline-block; width: .45rem; height: .45rem; margin-left: .4rem; border-radius: 50%; background: var(--dv-accent); vertical-align: middle; }
+.dv-release[data-unread] .dv-title::after { content: ""; display: inline-block; width: .45rem; height: .45rem; margin-inline-start: .4rem; border-radius: 50%; background: var(--dv-accent); vertical-align: middle; }
 .dv-title { margin: 0; font-size: .95rem; }
 .dv-meta { margin: .1rem 0 0; color: var(--dv-muted); font-size: .8rem; }
 .dv-image { display: block; max-width: 100%; border-radius: 6px; margin-top: .6rem; }
 .dv-summary { font-size: .875rem; }
 .dv-summary p { margin: .5rem 0 0; }
 .dv-entries { list-style: none; margin: .6rem 0 0; padding: 0; display: grid; gap: .4rem; font-size: .875rem; line-height: 1.45; }
-.dv-type { display: inline-block; margin-right: .3rem; padding: .05rem .4rem; border-radius: 4px; font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; color: var(--dv-accent); background: color-mix(in srgb, var(--dv-accent) 12%, transparent); }
+.dv-type { display: inline-block; margin-inline-end: .3rem; padding: .05rem .4rem; border-radius: 4px; font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; color: var(--dv-accent); background: color-mix(in srgb, var(--dv-accent) 12%, transparent); }
 .dv-entry[data-type="breaking"] .dv-type, .dv-entry[data-type="security"] .dv-type { color: var(--dv-warn); background: color-mix(in srgb, var(--dv-warn) 14%, transparent); }
 .dv-entry[data-type="fix"] .dv-type { color: var(--dv-good); background: color-mix(in srgb, var(--dv-good) 14%, transparent); }
 .dv-scope { color: var(--dv-muted); }
@@ -437,11 +437,11 @@ a { color: var(--dv-accent); }
 .state { color: var(--dv-muted); font-size: .875rem; min-height: 1.5rem; }
 .toast {
   position: absolute; top: calc(100% + .5rem); z-index: 999; width: min(300px, calc(100vw - 2rem)); box-sizing: border-box;
-  background: var(--dv-bg); color: var(--dv-fg); border: 1px solid var(--dv-border); border-left: 3px solid var(--dv-accent);
+  background: var(--dv-bg); color: var(--dv-fg); border: 1px solid var(--dv-border); border-inline-start: 3px solid var(--dv-accent);
   border-radius: var(--dv-radius); box-shadow: 0 8px 24px rgb(0 0 0 / .12); padding: .7rem .8rem; font-size: .875rem;
 }
-.toast[data-align="end"] { right: 0; }
-.toast[data-align="start"] { left: 0; }
+.toast[data-align="end"] { inset-inline-end: 0; }
+.toast[data-align="start"] { inset-inline-start: 0; }
 .toast-title { margin: 0; font-weight: 600; }
 .toast-text { margin: .3rem 0 0; color: var(--dv-muted); }
 .toast-actions { display: flex; align-items: center; justify-content: space-between; margin-top: .5rem; }

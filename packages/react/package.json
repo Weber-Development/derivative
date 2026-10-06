@@ -1,6 +1,6 @@
 {
   "name": "@sweberdev/derivative-react",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "React bindings for Derivative: a \"What's new\" button, an unread hook and a changelog list.",
   "license": "MIT",
   "author": "Seya Weber (https://github.com/sxwxbxr)",

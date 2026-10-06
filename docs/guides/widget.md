@@ -48,6 +48,7 @@ All events bubble and cross the shadow root.
 | `derivative-close` | |
 | `derivative-read` | `{ lastSeen }` |
 | `derivative-announce` | `{ release }`, when the toast appears |
+| `derivative-render` | `{ list }`, after the list was drawn (also after each search). For extensions that add something to every release, like Pro reactions |
 
 Methods: `show()`, `hide()`, `toggle()`, `markAllRead()`, `dismissToast()`. Properties: `open`, `unreadCount`.
 

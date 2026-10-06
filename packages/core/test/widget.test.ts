@@ -248,3 +248,27 @@ describe("search", () => {
     expect((shadow(el).querySelector(".search") as HTMLInputElement).value).toBe("typo");
   });
 });
+
+describe("derivative-render", () => {
+  it("fires after the list is drawn, in the popover only while open", () => {
+    const el = mount();
+    const seen = vi.fn();
+    el.addEventListener("derivative-render", (e) => seen((e as CustomEvent).detail.list.className));
+    el.feed = feed;
+    expect(seen).not.toHaveBeenCalled();
+    el.show();
+    expect(seen).toHaveBeenCalledWith("list");
+  });
+
+  it("fires for inline lists and again after a search", () => {
+    const el = mount({ mode: "inline", search: "" });
+    const seen = vi.fn();
+    el.addEventListener("derivative-render", seen);
+    el.feed = feed;
+    expect(seen).toHaveBeenCalledTimes(1);
+    const input = shadow(el).querySelector(".search") as HTMLInputElement;
+    input.value = "bug";
+    input.dispatchEvent(new Event("input"));
+    expect(seen).toHaveBeenCalledTimes(2);
+  });
+});

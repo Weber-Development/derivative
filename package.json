@@ -9,7 +9,7 @@
   "scripts": {
     "build": "pnpm -r --filter './packages/**' run build",
     "test": "pnpm -r --filter './packages/**' run test",
-    "check:packages": "attw --pack packages/core --profile node16 && attw --pack packages/react --profile node16",
+    "check:packages": "attw --pack packages/core --profile node16 && attw --pack packages/react --profile node16 && attw --pack packages/vue --profile node16",
     "typecheck": "pnpm -r --filter './packages/**' run typecheck",
     "lint": "biome check .",
     "format": "biome format --write .",

@@ -1,5 +1,11 @@
 # @sweberdev/derivative
 
+## 0.3.0
+
+### Minor Changes
+
+- a91fe97: `derivative init` sets up `derivative.config.json` and the build script in one step, and `--json-feed` writes a JSON Feed 1.1 next to the Atom feed.
+
 ## 0.2.0
 
 ### Minor Changes

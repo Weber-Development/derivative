@@ -172,3 +172,79 @@ describe("types and announce", () => {
     expect(shadow(el).querySelector(".toast")).toBeNull();
   });
 });
+
+describe("search", () => {
+  const many: Feed = createFeed(
+    [
+      {
+        id: "3.0.0",
+        version: "3.0.0",
+        date: "2026-10-04",
+        entries: [{ type: "feature", text: "Dark mode", scope: "ui" }],
+      },
+      {
+        id: "2.0.0",
+        version: "2.0.0",
+        date: "2026-10-02",
+        entries: [{ type: "fix", text: "Crash on export", details: "Happened with **CSV**." }],
+      },
+      {
+        id: "1.0.0",
+        version: "1.0.0",
+        date: "2026-09-01",
+        entries: [{ type: "fix", text: "Typo" }],
+      },
+    ],
+    { generatedAt: null },
+  );
+
+  function type(el: HTMLElement, value: string) {
+    const input = shadow(el).querySelector(".search") as HTMLInputElement;
+    input.value = value;
+    input.dispatchEvent(new Event("input"));
+    return input;
+  }
+
+  it("adds no field without the attribute", () => {
+    const el = mount({ mode: "inline" });
+    el.feed = many;
+    expect(shadow(el).querySelector(".search")).toBeNull();
+  });
+
+  it("filters releases as you type, across text, details, scope and version", () => {
+    const el = mount({ mode: "inline", search: "", limit: "1" });
+    el.feed = many;
+    const list = () => shadow(el).querySelectorAll(".dv-release").length;
+    expect(list()).toBe(1);
+    type(el, "csv");
+    expect(list()).toBe(1);
+    expect(shadow(el).querySelector(".list")?.textContent).toContain("Crash on export");
+    type(el, "UI");
+    expect(shadow(el).querySelector(".list")?.textContent).toContain("Dark mode");
+    // The limit applies to the unfiltered list only.
+    type(el, "fix");
+    type(el, "o");
+    expect(list()).toBe(3);
+    type(el, "1.0.0");
+    expect(list()).toBe(1);
+  });
+
+  it("keeps the field (and focus target) when nothing matches", () => {
+    const el = mount({ mode: "inline", search: "", lang: "de" });
+    el.feed = many;
+    const input = type(el, "zzz");
+    expect(shadow(el).querySelector(".list")?.textContent).toContain("Nichts gefunden.");
+    expect(shadow(el).querySelector(".search")).toBe(input);
+  });
+
+  it("works in the popover and keeps the query when reopened", () => {
+    const el = mount({ search: "" });
+    el.feed = many;
+    el.show();
+    type(el, "typo");
+    expect(shadow(el).querySelectorAll(".dv-release").length).toBe(1);
+    el.hide();
+    el.show();
+    expect((shadow(el).querySelector(".search") as HTMLInputElement).value).toBe("typo");
+  });
+});

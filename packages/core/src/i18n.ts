@@ -11,6 +11,10 @@ export interface Messages {
   /** Toast button that hides it. */
   dismiss: string;
   empty: string;
+  /** Placeholder and label of the search field. */
+  search: string;
+  /** Shown when a search matches nothing. */
+  noResults: string;
   error: string;
   unreleased: string;
   types: Record<EntryType, string>;
@@ -25,6 +29,8 @@ export const messages = {
     show: "Show",
     dismiss: "Dismiss",
     empty: "No updates yet.",
+    search: "Search updates",
+    noResults: "Nothing found.",
     error: "Updates could not be loaded.",
     unreleased: "Coming soon",
     types: {
@@ -46,6 +52,8 @@ export const messages = {
     show: "Ansehen",
     dismiss: "Ausblenden",
     empty: "Noch keine Neuigkeiten.",
+    search: "Neuigkeiten durchsuchen",
+    noResults: "Nichts gefunden.",
     error: "Neuigkeiten konnten nicht geladen werden.",
     unreleased: "Demnächst",
     types: {
@@ -67,6 +75,8 @@ export const messages = {
     show: "Voir",
     dismiss: "Masquer",
     empty: "Aucune nouveauté pour le moment.",
+    search: "Rechercher",
+    noResults: "Aucun résultat.",
     error: "Impossible de charger les nouveautés.",
     unreleased: "Bientôt",
     types: {
@@ -88,6 +98,8 @@ export const messages = {
     show: "Vedi",
     dismiss: "Nascondi",
     empty: "Ancora nessuna novità.",
+    search: "Cerca negli aggiornamenti",
+    noResults: "Nessun risultato.",
     error: "Impossibile caricare le novità.",
     unreleased: "In arrivo",
     types: {

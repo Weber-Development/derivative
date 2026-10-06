@@ -41,6 +41,27 @@ The handler works in any runtime with the Fetch API. It answers `204` for valid 
 events alike, rejects bodies over 8 KiB (`maxBytes`) and rejects other origins unless they are
 listed. For a database, implement `InsightStore` with `append(events)` and `read(since)`.
 
+## Database
+
+On serverless hosts without a persistent disk, keep events in Postgres or SQLite instead of a
+file. `sqlStore` needs no driver of its own; pass a function that runs one query:
+
+```ts
+import { neon } from "@neondatabase/serverless";
+import { createInsightsHandler, sqlStore } from "@weber-development/derivative-insights";
+
+const sql = neon(process.env.DATABASE_URL!);
+const store = sqlStore((query, params) => sql.query(query, params));
+await store.setup(); // once: creates the derivative_insights table
+
+export const POST = createInsightsHandler({ store });
+```
+
+With `pg`, pass `(q, p) => pool.query(q, p).then((r) => r.rows)`. For SQLite (better-sqlite3,
+Turso, Cloudflare D1) set `{ dialect: "sqlite" }`. `setupSql()` returns the `CREATE TABLE`
+statements if you run migrations yourself. For the report, read the events in a small script:
+`summarize(await store.read(since), feed)` and `renderReport(summary)`.
+
 ## Report
 
 ```sh

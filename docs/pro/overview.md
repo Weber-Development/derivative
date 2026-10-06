@@ -29,3 +29,8 @@ token. The full guide is `INSTALL.md` in that repository.
 ```
 
 When a subscription ends, installed versions keep working. Only updates and repository access end.
+
+## Stability
+
+The Pro packages follow the same [stability promise](../reference/stability.md) as the core package: documented exports, CLI options and environment variables do not break in a minor release, deprecations are announced one minor release ahead, and Node 20 and newer is supported. A test in the repository fails when an export is added, removed or renamed by accident. The stored Insights events and the subscriber tables keep their format.
+

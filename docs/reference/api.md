@@ -20,6 +20,7 @@ Runs in browsers and Node.
 | `renderReleases(releases, options?)` | HTML fragment |
 | `renderPage(feed, options?)` | Complete HTML page |
 | `renderAtom(feed, options?)` | Atom XML |
+| `renderJsonFeed(feed, options?)` | JSON Feed 1.1 |
 | `inlineMarkdown(text)`, `blockMarkdown(text)`, `escapeHtml(text)` | Safe Markdown subset |
 | `getMessages(lang?, overrides?)`, `formatDate(date, lang?)` | Labels and dates |
 | `compareVersions(a, b)`, `versionFromTag(tag)` | Version helpers |
@@ -34,6 +35,7 @@ Runs in browsers and Node.
 | `readTagDate(version, package?, cwd?)` | Date of a release tag |
 | `readGitHubReleases(repo, options?)` | Published releases from the GitHub API, newest first |
 | `loadConfig(path)` | Reads `derivative.config.json` |
+| `init(cwd?, { scripts? })`, `detectConfig(cwd)` | Same as `derivative init` |
 
 ## `@sweberdev/derivative/widget`
 

@@ -11,7 +11,15 @@ description: Build a feed and add the widget in five minutes.
 
    With npm: `npm i @sweberdev/derivative`.
 
-2. Build the feed. With a `CHANGELOG.md` in the project root (for example from Changesets):
+2. Set it up in one step:
+
+   ```sh
+   npx derivative init
+   ```
+
+   `init` looks at the project, writes `derivative.config.json` (source and output files) and puts `derivative build` in front of your `build` script, so the feed is rebuilt with every deploy. It never overwrites an existing config; pass `--no-scripts` to leave `package.json` alone. To do the same by hand, read on.
+
+   Build the feed. With a `CHANGELOG.md` in the project root (for example from Changesets):
 
    ```sh
    npx derivative build

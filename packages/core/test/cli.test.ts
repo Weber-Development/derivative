@@ -88,3 +88,38 @@ describe("derivative build", () => {
     stderr.mockRestore();
   });
 });
+
+describe("init", () => {
+  it("writes a config and runs derivative build before the build script", async () => {
+    const { init } = await import("../src/node");
+    const dir = mkdtempSync(join(tmpdir(), "derivative-init-"));
+    writeFileSync(join(dir, "CHANGELOG.md"), "# Changelog\n");
+    writeFileSync(
+      join(dir, "package.json"),
+      JSON.stringify({ name: "app", scripts: { build: "vite build" } }, null, 2),
+    );
+    const result = await init(dir);
+    expect(result.changed).toEqual(["derivative.config.json", "package.json"]);
+    expect(JSON.parse(readFileSync(join(dir, "derivative.config.json"), "utf8"))).toEqual({
+      source: "changelog",
+      out: { json: "public/changelog.json", atom: "public/changelog.xml" },
+    });
+    expect(JSON.parse(readFileSync(join(dir, "package.json"), "utf8")).scripts).toEqual({
+      build: "derivative build && vite build",
+      changelog: "derivative build",
+    });
+    // A second run changes nothing.
+    const again = await init(dir);
+    expect(again.changed).toEqual([]);
+    expect(again.notes).toHaveLength(2);
+  });
+
+  it("falls back to git and leaves package.json alone with scripts: false", async () => {
+    const { init } = await import("../src/node");
+    const dir = mkdtempSync(join(tmpdir(), "derivative-init-"));
+    writeFileSync(join(dir, "package.json"), "{}");
+    const result = await init(dir, { scripts: false });
+    expect(result.config.source).toBe("git");
+    expect(readFileSync(join(dir, "package.json"), "utf8")).toBe("{}");
+  });
+});

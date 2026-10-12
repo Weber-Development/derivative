@@ -6,5 +6,7 @@
     "@sweberdev/derivative-react": "1.0.0",
     "@sweberdev/derivative-vue": "1.0.0"
   },
-  "changesets": []
+  "changesets": [
+    "derivative-2"
+  ]
 }

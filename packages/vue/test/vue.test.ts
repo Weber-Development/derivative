@@ -47,8 +47,25 @@ describe("<WhatsNew>", () => {
     expect(el.getAttribute("limit")).toBe("5");
     expect(el.getAttribute("heading-level")).toBe("4");
     expect(el.hasAttribute("search")).toBe(true);
-    expect(el.hasAttribute("announce")).toBe(false);
+    expect(el.hasAttribute("highlight")).toBe(false);
     expect(el.feed).toBeTruthy();
+  });
+
+  it("passes highlight, audience and hints on", async () => {
+    const { root } = mount(WhatsNew, {
+      feed,
+      highlight: "modal",
+      audience: ["pro", "beta"],
+      hints: true,
+    });
+    await nextTick();
+    const el = root.querySelector("derivative-widget") as HTMLElement;
+    expect(el.getAttribute("highlight")).toBe("modal");
+    expect(el.getAttribute("audience")).toBe("pro,beta");
+    expect(el.hasAttribute("hints")).toBe(true);
+    const plain = mount(WhatsNew, { feed, highlight: true });
+    await nextTick();
+    expect(plain.root.querySelector("derivative-widget")?.getAttribute("highlight")).toBe("");
   });
 
   it("emits open and read", async () => {

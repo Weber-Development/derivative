@@ -20,7 +20,8 @@ HTML page) from CHANGELOG.md files, conventional commits or GitHub Releases.
 
 Options:
   --config <file>       Config file (default: ${CONFIG_FILE} if present)
-  --source <kind>       changelog | git | github | gitlab
+  --source <kind>       changelog | git | github | gitlab | linear | jira | notion
+  --feed-format <n>     1 or 2 (default 2): format of changelog.json
   --repo <owner/name>   github: repository to read releases from
   --project <path>      gitlab: group/name or numeric id (GITLAB_TOKEN for private projects)
   --gitlab-url <url>    gitlab: self-managed instance (default https://gitlab.com)
@@ -88,6 +89,7 @@ export async function main(argv: string[]): Promise<number> {
       "json-feed": { type: "string" },
       html: { type: "string" },
       lang: { type: "string" },
+      "feed-format": { type: "string" },
       help: { type: "boolean", short: "h" },
     },
   });
@@ -95,8 +97,17 @@ export async function main(argv: string[]): Promise<number> {
     process.stdout.write(HELP);
     return 0;
   }
-  if (values.source && !["git", "changelog", "github", "gitlab"].includes(values.source)) {
-    process.stderr.write(`--source must be "changelog", "git", "github" or "gitlab".\n`);
+  if (
+    values.source &&
+    !["git", "changelog", "github", "gitlab", "linear", "jira", "notion"].includes(values.source)
+  ) {
+    process.stderr.write(
+      `--source must be "changelog", "git", "github", "gitlab", "linear", "jira" or "notion".\n`,
+    );
+    return 2;
+  }
+  if (values["feed-format"] && !["1", "2"].includes(values["feed-format"])) {
+    process.stderr.write("--feed-format must be 1 or 2.\n");
     return 2;
   }
 
@@ -123,6 +134,7 @@ export async function main(argv: string[]): Promise<number> {
   if (values.link) config.link = values.link;
   if (values.limit) config.limit = Number.parseInt(values.limit, 10);
   if (values.lang) config.lang = values.lang;
+  if (values["feed-format"]) config.feedFormat = values["feed-format"] === "1" ? 1 : 2;
   if (values.out || values.atom || values.html || values["json-feed"]) {
     config.out = {
       json: values.out ?? config.out?.json ?? "public/changelog.json",

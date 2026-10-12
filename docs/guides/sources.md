@@ -1,9 +1,9 @@
 ---
 title: Sources
-description: Changesets, CHANGELOG.md formats and conventional commits.
+description: Changesets, CHANGELOG.md formats, conventional commits, GitHub and GitLab Releases, Linear, Jira and Notion.
 ---
 
-Derivative picks the source automatically: if `CHANGELOG.md` exists it reads that file, otherwise it reads GitHub Releases when `repo` is set, and git in all other cases. GitLab Releases are read when `project` is set and nothing else matches. Set `--source changelog`, `--source github`, `--source gitlab` or `--source git` to choose explicitly.
+Derivative picks the source automatically: if `CHANGELOG.md` exists it reads that file, otherwise it reads GitHub Releases when `repo` is set, and git in all other cases. GitLab Releases are read when `project` is set and nothing else matches. Set `--source changelog`, `--source github`, `--source gitlab`, `--source git`, `--source linear`, `--source jira` or `--source notion` to choose explicitly. The tracker sources are never picked automatically.
 
 ## Changesets
 
@@ -89,3 +89,45 @@ npx derivative build --exclude-package "@acme/internal-*"
 ```
 
 `--package` keeps only matching packages, `--exclude-package` drops matching ones afterwards. A name matches exactly, or as a prefix when it ends in `*`. In the config they are `packages` and `excludePackages`. The widget has the same filter as an attribute, see [the widget guide](widget.md): `<derivative-widget src="/changelog.json" package="@acme/web">` shows, counts and marks as read only that package.
+
+## Linear, Jira and Notion (beta)
+
+If product and support write down what shipped in a tracker, Derivative can read it. These sources only read, use a token that you create and keep in the environment, and never write back. They are **beta**: tested against fixtures of the documented API responses, not yet against live accounts. Try them with a read-only token and look at the result before you publish.
+
+All three decide the entry type from labels or the issue type (case-insensitive): `feature`, `new feature`, `story` → New; `improvement`, `enhancement`, `task` → Improved; `bug`, `fix`, `defect` → Fixed; `security`; `breaking`; `deprecation`; `removal`. Everything else becomes Improved. Add or change mappings with `types` and the fallback with `fallback`. Tickets labelled `internal`, `no-changelog` or `skip-changelog` stay out (change the list with `excludeLabels`). A label `audience:pro` sets the entry's audience, which the widget's `audience` attribute uses.
+
+### Linear
+
+Every completed cycle of a team becomes a release (newest 50). Issues completed in it are its entries; the cycle name is the title.
+
+```json
+{ "source": "linear", "linear": { "team": "ENG" } }
+```
+
+Create a personal API key with read access and set `LINEAR_API_KEY`.
+
+### Jira
+
+Every released version of a Jira Cloud project becomes a release (newest 20). Issues with that `fixVersion` are its entries, linked to the ticket. A version name like `2.4.0` is the version; any other name becomes the title. The version description becomes the summary.
+
+```json
+{ "source": "jira", "jira": { "url": "https://acme.atlassian.net", "project": "ACME" } }
+```
+
+Set `JIRA_EMAIL` and `JIRA_API_TOKEN` (an API token of that account). `"includeUnreleased": true` also reads versions that are not released yet.
+
+### Notion
+
+Pages of a database become entries, grouped by their `Version` property. `Name` is the text, `Type` the entry type, `Date` the release date, `Audience` (multi-select) the audiences.
+
+```json
+{
+  "source": "notion",
+  "notion": {
+    "database": "0123456789abcdef0123456789abcdef",
+    "properties": { "published": "Published" }
+  }
+}
+```
+
+With `properties.published`, only pages with that checkbox ticked are included. Rename the columns through `properties` (`title`, `version`, `type`, `date`, `audience`). Create an internal integration, share the database with it and set `NOTION_TOKEN`.

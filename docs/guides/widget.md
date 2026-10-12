@@ -32,7 +32,9 @@ defineDerivativeWidget("acme-whats-new");
 | `types` | all | Comma-separated entry types to show, e.g. `feature,fix`. Releases without a matching entry are hidden unless they have a title or summary |
 | `package` | all | Monorepo feeds: show, count and mark as read only these packages. Comma-separated, a trailing `*` matches a prefix, e.g. `@acme/*` |
 | `heading-level` | `3` in the panel, `2` inline | Level of the release headings, 2 to 6, so the page's heading outline stays in order |
-| `announce` | off | Shows a small toast for the newest unread release that has a title, once per release |
+| `highlight` | off | Announces the newest unread release that has a title, once per release: `toast` (default when the attribute is present), `banner` or `modal`. Releases with `importance: "major"` come first. See [Highlights](#highlight) |
+| `audience` | none | Comma-separated audiences of the reader, e.g. `pro,admin`. Releases and entries that name an audience are hidden from everyone else; content without an audience is shown to all |
+| `hints` | off | Sets `data-derivative-hint` on the page elements that unread entries point to with `target` (a CSS selector) and removes it when the reader has seen the release |
 | `search` | off | Adds a search field above the list. It filters as you type across version, title, summary, entries, details and scope, and ignores `limit` while a query is active |
 | `storage-key` | `derivative:last-seen` | `localStorage` key, set one per product if you embed several feeds |
 
@@ -49,14 +51,46 @@ All events bubble and cross the shadow root.
 | `derivative-open` | |
 | `derivative-close` | |
 | `derivative-read` | `{ lastSeen }` |
-| `derivative-announce` | `{ release }`, when the toast appears |
+| `derivative-highlight` | `{ release }`, when a highlight appears |
 | `derivative-render` | `{ list }`, after the list was drawn (also after each search). For extensions that add something to every release, like Pro reactions |
 
-Methods: `show()`, `hide()`, `toggle()`, `markAllRead()`, `dismissToast()`. Properties: `open`, `unreadCount`.
+Methods: `show()`, `hide()`, `toggle()`, `markAllRead()`, `dismissHighlight()`. Properties: `open`, `unreadCount`.
 
-## Announcement toast
+## Highlight
 
-With `announce`, the widget shows a small toast next to the button for the newest unread release that has a `title` (set one in [Highlights](highlights.md) or as the GitHub release name). It contains the title, the first paragraph of the summary, and "Show" and "Dismiss" buttons. Each release is announced only once per reader; dismissing it keeps the unread badge, "Show" opens the panel. Patch releases without a title never interrupt anyone.
+With `highlight`, the widget announces the newest unread release that has a `title` (set one in [Highlights](highlights.md) or as the GitHub release name), once per reader and release. A release with `importance: "major"` wins over newer minor ones. Patch releases without a title never interrupt anyone. Dismissing a highlight keeps the unread badge; "Show" opens the panel.
+
+| Value | Looks like |
+|---|---|
+| `toast` | A small card next to the button with the title and the first paragraph of the summary |
+| `banner` | A bar across the top of the page with the title, the first paragraph and the buttons |
+| `modal` | A centred dialog (`role="dialog"`, `aria-modal`) with the title, the whole summary, the first image and the release's links. Tab stays inside, Escape or a click on the backdrop dismisses it and focus returns to the button |
+
+## Audiences
+
+Mark releases or entries with `audience` in the feed ([format](../reference/feed.md)), or label tickets `audience:pro` in a tracker, and tell the widget who is reading with `audience="pro"`. Hidden content is not counted as unread. The filter runs in the browser, so use it for relevance, not for secrets: the feed file itself is public. For feeds that must not leak, [Pro Segments](../pro/segments.md) builds one feed per audience.
+
+## Hints in the page
+
+An entry with `"target": "#export-button"` points at the part of your product it is about. With `hints`, the widget sets `data-derivative-hint="feature"` (the entry type) on matching elements while the entry is unread. Style it as you like:
+
+```css
+[data-derivative-hint]::after {
+  content: "";
+  display: inline-block;
+  width: .5rem;
+  height: .5rem;
+  margin-inline-start: .35rem;
+  border-radius: 50%;
+  background: #2f5bea;
+}
+```
+
+The attribute disappears when the reader opens the panel (all releases count as read). Invalid selectors are ignored.
+
+## Translations
+
+If the feed carries `translations` (the [feed format](../reference/feed.md) describes them), the widget and the generated page use the title, summary and entry texts of the language set with `lang`, falling back to the original text.
 
 ## Search
 
@@ -88,11 +122,11 @@ Also available:
 | `--dv-button-radius` | `999px` | Corner radius of the button |
 | `--dv-button-bg`, `--dv-button-fg` | `--dv-bg`, inherited | Button colours |
 | `--dv-badge-fg` | `--dv-bg` | Text colour of the unread badge (background is `--dv-accent`) |
-| `--dv-shadow` | soft shadow | Shadow of the panel and the toast |
+| `--dv-shadow` | soft shadow | Shadow of the panel and the highlight |
 | `--dv-max-height` | `min(70vh, 560px)` | Height limit of the panel |
-| `--dv-z` | `1000` | Stacking order of the panel, the toast sits one below |
+| `--dv-z` | `1000` | Stacking order of the panel, the banner and toast sit one below, the modal one above |
 
-For deeper changes, use `::part()`: `button`, `badge`, `panel`, `header`, `title`, `close`, `search`, `list`, `link`, `release`, `release-title`, `meta`, `summary`, `entry`, `type`, `scope`, `entry-link`, `toast`, `toast-title`, `toast-action` and `toast-dismiss`.
+For deeper changes, use `::part()`: `button`, `badge`, `panel`, `header`, `title`, `close`, `search`, `list`, `link`, `release`, `release-title`, `meta`, `summary`, `entry`, `type`, `scope`, `entry-link`, `highlight`, `highlight-title`, `highlight-text`, `highlight-action`, `highlight-dismiss`, `backdrop`, `media`, `links` and `action`.
 
 ```css
 derivative-widget::part(entry) { padding-block: 0.25rem; }
@@ -116,11 +150,11 @@ Or style the colour properties yourself, e.g. `.dark derivative-widget { --dv-bg
 
 ### Right-to-left
 
-Pages with `dir="rtl"` need no setting: the panel and the toast open from the correct side, and `align="start"` and `align="end"` follow the reading direction.
+Pages with `dir="rtl"` need no setting: the panel and the highlight open from the correct side, and `align="start"` and `align="end"` follow the reading direction.
 
 ## Accessibility
 
-Colours meet the WCAG AA contrast ratio (4.5:1) in light and dark mode. Pages with `dir="rtl"` work too: the panel and toast open from the correct side. Both are checked in real Chromium in CI. Release headings are `h3` under the panel's `h2`; inline lists start at `h2` and can be moved with `heading-level`. The widget is checked with axe in the test suite. The button reports its state with `aria-expanded` and announces the number of new releases to screen readers. The panel is a labelled dialog that receives focus when it opens. Escape closes it and returns focus to the button, as does a click outside. The toast is a `role="status"` region, so screen readers announce it without moving focus. The opening animation is skipped when the reader prefers reduced motion.
+Colours meet the WCAG AA contrast ratio (4.5:1) in light and dark mode. Pages with `dir="rtl"` work too: the panel and highlight open from the correct side. Both are checked in real Chromium in CI. Release headings are `h3` under the panel's `h2`; inline lists start at `h2` and can be moved with `heading-level`. The widget is checked with axe in the test suite. The button reports its state with `aria-expanded` and announces the number of new releases to screen readers. The panel is a labelled dialog that receives focus when it opens. Escape closes it and returns focus to the button, as does a click outside. Toast and banner are `role="status"` regions, so screen readers announce them without moving focus; the modal is a labelled dialog that takes focus and returns it on close. The opening animation is skipped when the reader prefers reduced motion.
 
 ## Security
 

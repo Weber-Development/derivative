@@ -76,7 +76,7 @@ describe("derivative build", () => {
     stdout.mockRestore();
     expect(code).toBe(0);
     const feed = JSON.parse(readFileSync(join(dir, "public/changelog.json"), "utf8"));
-    expect(feed).toMatchObject({ version: 1, title: "Acme" });
+    expect(feed).toMatchObject({ version: 2, title: "Acme" });
     expect(feed.releases[0]).toMatchObject({ id: "1.1.0", title: "Faster API" });
     expect(readFileSync(join(dir, "public/changelog.xml"), "utf8")).toContain("<feed");
     expect(readFileSync(join(dir, "public/changelog.html"), "utf8")).toContain("Faster API");
@@ -121,5 +121,28 @@ describe("init", () => {
     const result = await init(dir, { scripts: false });
     expect(result.config.source).toBe("git");
     expect(readFileSync(join(dir, "package.json"), "utf8")).toBe("{}");
+  });
+});
+
+describe("feed format and trackers", () => {
+  it("writes format 1 on request", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "dv-fmt-"));
+    writeFileSync(join(dir, "CHANGELOG.md"), "## 1.0.0\n\n- First\n");
+    const code = await main([
+      "build",
+      "--changelog",
+      join(dir, "CHANGELOG.md"),
+      "--out",
+      join(dir, "c.json"),
+      "--feed-format",
+      "1",
+    ]);
+    expect(code).toBe(0);
+    expect(JSON.parse(readFileSync(join(dir, "c.json"), "utf8")).version).toBe(1);
+  });
+
+  it("rejects unknown formats and sources", async () => {
+    expect(await main(["build", "--feed-format", "3"])).toBe(2);
+    expect(await main(["build", "--source", "trello"])).toBe(2);
   });
 });

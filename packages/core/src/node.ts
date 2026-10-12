@@ -2,7 +2,7 @@ import { execFile } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { promisify } from "node:util";
-import { createFeed } from "./feed";
+import { createFeed, toFeedV1 } from "./feed";
 import { type Commit, parseCommits } from "./parse/commits";
 import {
   type GitHubRelease,
@@ -10,7 +10,11 @@ import {
   parseGitHubReleases,
   parseGitLabReleases,
 } from "./parse/github";
+import { type JiraIssue, type JiraVersion, parseJiraVersions } from "./parse/jira";
+import { LINEAR_CYCLES_QUERY, type LinearCycle, parseLinearCycles } from "./parse/linear";
 import { parseChangelog } from "./parse/markdown";
+import { type NotionPage, type ParseNotionOptions, parseNotionPages } from "./parse/notion";
+import type { TrackerOptions } from "./parse/tracker";
 import { renderAtom, renderJsonFeed, renderPage } from "./render";
 import type { EntryType, Feed, Highlights, Release } from "./types";
 
@@ -20,9 +24,16 @@ export interface DerivativeConfig {
   /**
    * `changelog` reads CHANGELOG.md files, `git` reads conventional commits, `github` reads the
    * releases of `repo` through the GitHub API, `gitlab` those of `project` through the GitLab API.
-   * Default `changelog` if a file exists, else `git`.
+   * `linear`, `jira` and `notion` read finished work from a tracker (read-only, with a token from
+   * the environment). Default `changelog` if a file exists, else `git`.
    */
-  source?: "changelog" | "git" | "github" | "gitlab";
+  source?: "changelog" | "git" | "github" | "gitlab" | "linear" | "jira" | "notion";
+  /** Linear: team key (e.g. `ENG`). Every completed cycle becomes a release. `LINEAR_API_KEY`. @beta */
+  linear?: { team: string } & TrackerOptions;
+  /** Jira Cloud: site URL and project key. Every released version becomes a release. `JIRA_EMAIL` and `JIRA_API_TOKEN`. @beta */
+  jira?: { url: string; project: string; includeUnreleased?: boolean } & TrackerOptions;
+  /** Notion: database id. Pages are grouped by their `Version` property. `NOTION_TOKEN`. @beta */
+  notion?: { database: string } & ParseNotionOptions;
   /** GitHub: `owner/name`. Uses the `GITHUB_TOKEN` environment variable when set. */
   repo?: string;
   /** GitLab: project path (`group/name`) or numeric id. Uses `GITLAB_TOKEN` when set. */
@@ -48,10 +59,12 @@ export interface DerivativeConfig {
   commitUrl?: string;
   includeUnreleased?: boolean;
   title?: string;
+  /** Format of `changelog.json`. Default 2; `1` for widgets still on 1.x. */
+  feedFormat?: 1 | 2;
   /** Public URL of the full changelog page. */
   link?: string;
   limit?: number;
-  /** Titles, summaries and images written by a person, keyed by version. */
+  /** Titles, summaries, media and links written by a person, keyed by version. */
   highlights?: Highlights;
   /** Where to write. Paths are relative to the config file. */
   out?: { json?: string; atom?: string; html?: string; jsonFeed?: string };
@@ -166,6 +179,120 @@ export async function readGitLabReleases(
   return all;
 }
 
+async function failIfNotOk(response: Response, what: string, hint: string): Promise<void> {
+  if (!response.ok) throw new Error(`${what} answered ${response.status}${hint}`);
+}
+
+/** Reads the newest completed cycles of a Linear team (up to 50). @beta */
+export async function readLinearCycles(
+  team: string,
+  options: { token?: string; fetch?: typeof fetch; apiUrl?: string } = {},
+): Promise<LinearCycle[]> {
+  const token = options.token ?? process.env.LINEAR_API_KEY;
+  if (!token) throw new Error("Set LINEAR_API_KEY to read Linear.");
+  const response = await (options.fetch ?? fetch)(
+    options.apiUrl ?? "https://api.linear.app/graphql",
+    {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: token },
+      body: JSON.stringify({ query: LINEAR_CYCLES_QUERY, variables: { team, first: 50 } }),
+    },
+  );
+  await failIfNotOk(response, "Linear", " (check LINEAR_API_KEY and the team key)");
+  const body = (await response.json()) as {
+    data?: { cycles?: { nodes: LinearCycle[] } };
+    errors?: { message: string }[];
+  };
+  if (body.errors?.length) throw new Error(`Linear: ${body.errors[0]?.message}`);
+  return body.data?.cycles?.nodes ?? [];
+}
+
+/** Reads released versions of a Jira Cloud project (newest 20) with their issues. @beta */
+export async function readJiraVersions(
+  site: string,
+  project: string,
+  options: {
+    email?: string;
+    token?: string;
+    fetch?: typeof fetch;
+    includeUnreleased?: boolean;
+  } = {},
+): Promise<{ version: JiraVersion; issues: JiraIssue[] }[]> {
+  if (!/^[A-Z][A-Z0-9_]+$/i.test(project))
+    throw new Error(`"${project}" is not a Jira project key.`);
+  const email = options.email ?? process.env.JIRA_EMAIL;
+  const token = options.token ?? process.env.JIRA_API_TOKEN;
+  if (!email || !token) throw new Error("Set JIRA_EMAIL and JIRA_API_TOKEN to read Jira.");
+  const base = site.replace(/\/$/, "");
+  const doFetch = options.fetch ?? fetch;
+  const headers = {
+    accept: "application/json",
+    authorization: `Basic ${Buffer.from(`${email}:${token}`).toString("base64")}`,
+  };
+  const versionsResponse = await doFetch(`${base}/rest/api/3/project/${project}/versions`, {
+    headers,
+  });
+  await failIfNotOk(
+    versionsResponse,
+    "Jira",
+    " (check JIRA_EMAIL, JIRA_API_TOKEN and the project key)",
+  );
+  const all = (await versionsResponse.json()) as (JiraVersion & { id?: string })[];
+  const versions = all
+    .filter((v) => options.includeUnreleased || v.released)
+    .sort((a, b) => (b.releaseDate ?? "").localeCompare(a.releaseDate ?? ""))
+    .slice(0, 20);
+  const out: { version: JiraVersion; issues: JiraIssue[] }[] = [];
+  for (const version of versions) {
+    const jql = `project = ${project} AND fixVersion = "${version.name.replace(/"/g, '\\"')}"`;
+    const response = await doFetch(
+      `${base}/rest/api/3/search/jql?jql=${encodeURIComponent(jql)}&fields=summary,issuetype,labels&maxResults=100`,
+      { headers },
+    );
+    await failIfNotOk(response, "Jira", "");
+    out.push({
+      version,
+      issues: ((await response.json()) as { issues: JiraIssue[] }).issues ?? [],
+    });
+  }
+  return out;
+}
+
+/** Reads the pages of a Notion database (up to 300). @beta */
+export async function readNotionPages(
+  database: string,
+  options: { token?: string; fetch?: typeof fetch; apiUrl?: string } = {},
+): Promise<NotionPage[]> {
+  if (!/^[0-9a-f-]{32,36}$/i.test(database))
+    throw new Error(`"${database}" is not a Notion database id.`);
+  const token = options.token ?? process.env.NOTION_TOKEN;
+  if (!token) throw new Error("Set NOTION_TOKEN to read Notion.");
+  const api = options.apiUrl ?? "https://api.notion.com";
+  const pages: NotionPage[] = [];
+  let cursor: string | undefined;
+  for (let i = 0; i < 3; i++) {
+    const response = await (options.fetch ?? fetch)(`${api}/v1/databases/${database}/query`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${token}`,
+        "notion-version": "2022-06-28",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ page_size: 100, ...(cursor ? { start_cursor: cursor } : {}) }),
+    });
+    await failIfNotOk(response, "Notion", " (share the database with your integration)");
+    const body = (await response.json()) as {
+      results: NotionPage[];
+      has_more?: boolean;
+      next_cursor?: string | null;
+    };
+    pages.push(...body.results);
+    if (!body.has_more || !body.next_cursor) break;
+    cursor = body.next_cursor;
+  }
+  return pages;
+}
+
 /** True when `name` matches one of the patterns (`*` at the end matches a prefix). */
 export function matchesPackage(name: string | undefined, patterns: string[]): boolean {
   if (!name) return false;
@@ -222,6 +349,22 @@ export async function buildFeed(config: DerivativeConfig = {}, cwd = process.cwd
       await readGitLabReleases(config.project, { baseUrl: config.gitlabUrl }),
       { includePrereleases: config.includePrereleases },
     );
+  } else if (source === "linear") {
+    if (!config.linear?.team) throw new Error('source "linear" needs linear.team, e.g. "ENG".');
+    releases = parseLinearCycles(await readLinearCycles(config.linear.team), config.linear);
+  } else if (source === "jira") {
+    if (!config.jira?.url || !config.jira.project) {
+      throw new Error('source "jira" needs jira.url and jira.project.');
+    }
+    releases = parseJiraVersions(
+      await readJiraVersions(config.jira.url, config.jira.project, {
+        includeUnreleased: config.jira.includeUnreleased,
+      }),
+      { ...config.jira, baseUrl: config.jira.url },
+    );
+  } else if (source === "notion") {
+    if (!config.notion?.database) throw new Error('source "notion" needs notion.database.');
+    releases = parseNotionPages(await readNotionPages(config.notion.database), config.notion);
   } else {
     const template = config.commitUrl;
     releases = parseCommits(await readGitCommits(cwd), {
@@ -273,7 +416,10 @@ export async function writeOutputs(
     await writeFile(path, content);
     written.push(path);
   };
-  await write(out.json, `${JSON.stringify(feed, null, 2)}\n`);
+  await write(
+    out.json,
+    `${JSON.stringify(config.feedFormat === 1 ? toFeedV1(feed) : feed, null, 2)}\n`,
+  );
   await write(out.atom, renderAtom(feed, { lang: config.lang, selfUrl: config.atomUrl }));
   await write(out.html, renderPage(feed, { lang: config.lang }));
   await write(

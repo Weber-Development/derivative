@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
-// The public API is frozen for 1.0: adding, removing or renaming an export fails this test.
+// The public API is frozen for 2.0: adding, removing or renaming an export fails this test.
 // If the change is intended, update the list below in the same commit, add a changeset, and
 // document the export in docs/reference/api.md.
 
@@ -74,6 +74,29 @@ const SURFACE: Record<string, string[]> = {
     "renderReleases",
     "sortReleases",
     "versionFromTag",
+    "FeedV1",
+    "Importance",
+    "Media",
+    "ReleaseLink",
+    "ReleaseTranslation",
+    "localizeRelease",
+    "toFeedV1",
+    "JiraIssue",
+    "JiraVersion",
+    "ParseJiraOptions",
+    "parseJiraVersions",
+    "LINEAR_CYCLES_QUERY",
+    "LinearCycle",
+    "parseLinearCycles",
+    "NotionPage",
+    "NotionProperty",
+    "ParseNotionOptions",
+    "parseNotionPages",
+    "DEFAULT_EXCLUDED_LABELS",
+    "DEFAULT_TRACKER_TYPES",
+    "TrackerIssue",
+    "TrackerOptions",
+    "TypeMap",
   ],
   "core/src/node.ts": [
     "CONFIG_FILE",
@@ -87,6 +110,9 @@ const SURFACE: Record<string, string[]> = {
     "readGitCommits",
     "readGitHubReleases",
     "readGitLabReleases",
+    "readJiraVersions",
+    "readLinearCycles",
+    "readNotionPages",
     "readTagDate",
     "writeOutputs",
   ],

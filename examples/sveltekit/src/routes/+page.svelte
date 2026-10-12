@@ -7,6 +7,6 @@
 
 <header style="display: flex; justify-content: space-between; padding: 1rem">
   <strong>Acme</strong>
-  <derivative-widget src="/changelog.json" announce search></derivative-widget>
+  <derivative-widget src="/changelog.json" highlight search></derivative-widget>
 </header>
 <main style="padding: 1rem"><h1>Dashboard</h1></main>

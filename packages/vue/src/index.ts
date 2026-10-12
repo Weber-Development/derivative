@@ -26,7 +26,7 @@ import {
  * The `<derivative-widget>` web component as a Vue 3 component.
  *
  * ```vue
- * <WhatsNew src="/changelog.json" lang="de" announce search @read="onRead" />
+ * <WhatsNew src="/changelog.json" lang="de" highlight="banner" search @read="onRead" />
  * ```
  */
 export const WhatsNew = defineComponent({
@@ -48,8 +48,12 @@ export const WhatsNew = defineComponent({
     theme: String as PropType<"light" | "dark">,
     /** Show only these entry types, e.g. `["feature", "fix"]`. */
     types: Array as PropType<EntryType[]>,
-    /** Show a toast once when a new release with a title arrives. */
-    announce: Boolean,
+    /** Announce the newest unread release with a title once: `true` or `"toast"`, `"banner"` or `"modal"`. Releases marked `importance: "major"` come first. */
+    highlight: [Boolean, String] as PropType<boolean | "toast" | "banner" | "modal">,
+    /** Audiences of the reader. Entries and releases with an audience are hidden from everyone else. */
+    audience: Array as PropType<string[]>,
+    /** Mark page elements named by an entry's `target` with `data-derivative-hint` while it is unread. */
+    hints: Boolean,
     /** Add a search field to the panel. */
     search: Boolean,
     /** Monorepo feeds: show only these packages. A trailing `*` matches a prefix. */
@@ -97,7 +101,14 @@ export const WhatsNew = defineComponent({
           align: props.align,
           theme: props.theme,
           types: props.types?.join(","),
-          announce: props.announce ? "" : undefined,
+          highlight:
+            props.highlight === undefined || props.highlight === false
+              ? undefined
+              : props.highlight === true
+                ? ""
+                : props.highlight,
+          audience: props.audience?.join(","),
+          hints: props.hints ? "" : undefined,
           search: props.search ? "" : undefined,
           package: props.packages?.join(","),
           "heading-level":

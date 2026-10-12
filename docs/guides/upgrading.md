@@ -1,7 +1,9 @@
 ---
 title: Upgrading
-description: What changed on the way to 1.0 and what to check when you update.
+description: What changed on the way to 1.0 and what to check when you update. Coming from 1.x? See Migrating to 2.0.
 ---
+
+Coming from 1.x? Read [Migrating to 2.0](migrating-to-2.md) first. The rest of this page is about the way to 1.0.
 
 Derivative 1.0 changes nothing compared with 0.9: it is the release in which the [stability promise](../reference/stability.md) starts. If you are on 0.9, update the packages and you are done. If you are on an older 0.x version, this page lists the changes that could be visible in an existing installation. Everything else was added without changing existing behaviour.
 

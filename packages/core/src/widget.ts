@@ -1,6 +1,6 @@
-import { parseFeed } from "./feed";
+import { localizeRelease, parseFeed, safeUrl } from "./feed";
 import { getMessages, type Messages } from "./i18n";
-import { escapeHtml, inlineMarkdown } from "./markdown";
+import { blockMarkdown, escapeHtml, inlineMarkdown } from "./markdown";
 import { renderReleases } from "./render";
 import { ENTRY_TYPES, type Feed, type Release } from "./types";
 import { createStore, getUnread, latestKey, releaseKey } from "./unread";
@@ -13,11 +13,18 @@ let instances = 0;
  * `<derivative-widget src="/changelog.json">`: a "What's new" button with an unread badge
  * and a panel listing the latest releases. Use `mode="inline"` to render the list in place.
  *
- * Attributes: `src`, `lang`, `mode` (`popover` | `inline`), `limit`, `storage-key`, `href`,
- * `label`, `align` (`start` | `end`), `types` (comma-separated entry types to show), `announce`
- * (show a toast once for a new release with a title), `search` (adds a search field to the panel), `heading-level` (2 to 6, the level of the release headings; default 3 in the panel and 2 inline), `package` (monorepo feeds: only these packages, comma-separated, a trailing `*` matches a prefix). Events: `derivative-open`,
- * `derivative-close`, `derivative-read`, `derivative-load`, `derivative-error`,
- * `derivative-announce`, `derivative-render` (the list was drawn; `detail.list` is the element, for extensions that add to each release).
+ * Attributes: `src`, `lang` (also picks `translations` of the feed), `mode` (`popover` | `inline`),
+ * `limit`, `storage-key`, `href`, `label`, `align` (`start` | `end`), `theme` (`light` | `dark`),
+ * `types` (comma-separated entry types to show), `audience` (comma-separated audiences of the
+ * reader; entries and releases with an audience are hidden from everyone else), `highlight`
+ * (announce the newest unread release with a title once: `toast`, `banner` or `modal`; releases
+ * marked `importance: "major"` come first), `hints` (mark page elements named by an entry's
+ * `target` with `data-derivative-hint` while the entry is unread), `search` (adds a search field to
+ * the panel), `heading-level` (2 to 6, the level of the release headings; default 3 in the panel
+ * and 2 inline), `package` (monorepo feeds: only these packages, comma-separated, a trailing `*`
+ * matches a prefix). Events: `derivative-open`, `derivative-close`, `derivative-read`,
+ * `derivative-load`, `derivative-error`, `derivative-highlight`, `derivative-render` (the list was
+ * drawn; `detail.list` is the element, for extensions that add to each release).
  */
 export class DerivativeWidget extends Base {
   static observedAttributes = [
@@ -32,6 +39,9 @@ export class DerivativeWidget extends Base {
     "search",
     "package",
     "heading-level",
+    "highlight",
+    "audience",
+    "hints",
   ];
 
   /** Override any UI text. */
@@ -43,7 +53,8 @@ export class DerivativeWidget extends Base {
   #root: ShadowRoot | undefined;
   #id = `dv-${++instances}`;
   #abort: AbortController | undefined;
-  #toast: Release | undefined;
+  #highlighted: Release | undefined;
+  #hinted = new Set<Element>();
   #query = "";
 
   get feed(): Feed | undefined {
@@ -54,7 +65,7 @@ export class DerivativeWidget extends Base {
   set feed(value: Feed | undefined) {
     this.#feed = value ? parseFeed(value) : undefined;
     this.#error = false;
-    this.#pickToast();
+    this.#pickHighlight();
     this.#render();
   }
 
@@ -77,6 +88,7 @@ export class DerivativeWidget extends Base {
   disconnectedCallback(): void {
     document.removeEventListener("pointerdown", this.#onOutside);
     this.#abort?.abort();
+    this.#clearHints();
   }
 
   attributeChangedCallback(name: string, oldValue: string | null, value: string | null): void {
@@ -88,7 +100,7 @@ export class DerivativeWidget extends Base {
   show(): void {
     if (this.#open || this.#mode === "inline") return;
     this.#open = true;
-    this.#dismissToast();
+    this.#dismissHighlight();
     this.#render();
     this.#root?.querySelector<HTMLElement>(".panel")?.focus();
     this.#emit("derivative-open");
@@ -116,33 +128,43 @@ export class DerivativeWidget extends Base {
     this.#store().set(key);
     this.#emit("derivative-read", { lastSeen: key });
     this.#renderBadge();
+    this.#syncHints();
   }
 
-  /** Hides the announcement toast and remembers it for this release. */
-  dismissToast(): void {
-    this.#dismissToast();
+  /** Hides the highlight (toast, banner or modal) and remembers it for this release. */
+  dismissHighlight(): void {
+    const modal = this.#highlightKind === "modal";
+    this.#dismissHighlight();
     this.#render();
+    if (modal) this.#root?.querySelector<HTMLElement>(".trigger")?.focus();
   }
 
-  #dismissToast(): void {
-    if (!this.#toast) return;
-    this.#toastStore().set(releaseKey(this.#toast));
-    this.#toast = undefined;
+  #dismissHighlight(): void {
+    if (!this.#highlighted) return;
+    this.#highlightStore().set(releaseKey(this.#highlighted));
+    this.#highlighted = undefined;
   }
 
-  #toastStore() {
+  #highlightStore() {
     return createStore(`${this.getAttribute("storage-key") ?? "derivative:last-seen"}:announced`);
   }
 
-  /** The newest unread release with a title, unless it was announced already. */
-  #pickToast(): void {
-    this.#toast = undefined;
+  get #highlightKind(): "toast" | "banner" | "modal" | undefined {
+    const value = this.getAttribute("highlight");
+    if (value === null) return undefined;
+    return value === "banner" || value === "modal" ? value : "toast";
+  }
+
+  /** The newest unread release with a title (`major` ones first), unless it was shown already. */
+  #pickHighlight(): void {
+    this.#highlighted = undefined;
     const view = this.#view;
-    if (!view || !this.hasAttribute("announce") || this.#mode === "inline") return;
-    const release = getUnread(view, this.#store().get()).find((r) => r.title);
-    if (!release || this.#toastStore().get() === releaseKey(release)) return;
-    this.#toast = release;
-    this.#emit("derivative-announce", { release: releaseKey(release) });
+    if (!view || !this.#highlightKind || this.#mode === "inline") return;
+    const unread = getUnread(view, this.#store().get()).filter((r) => r.title);
+    const release = unread.find((r) => r.importance === "major") ?? unread[0];
+    if (!release || this.#highlightStore().get() === releaseKey(release)) return;
+    this.#highlighted = release;
+    this.#emit("derivative-highlight", { release: releaseKey(release) });
   }
 
   get #types(): Set<string> | undefined {
@@ -154,18 +176,37 @@ export class DerivativeWidget extends Base {
     return set.size ? set : undefined;
   }
 
-  /** The feed as this widget shows it: limited to the `package` attribute in monorepo feeds. */
+  /**
+   * The feed as this widget shows it: limited to the `package` attribute in monorepo feeds and to
+   * what the `audience` attribute may see. Content with an audience is hidden from everyone else.
+   */
   get #view(): Feed | undefined {
     const feed = this.#feed;
+    if (!feed) return feed;
     const raw = this.getAttribute("package");
-    if (!feed || !raw) return feed;
-    const names = raw
+    const names = (raw ?? "")
       .split(",")
       .map((n) => n.trim())
       .filter(Boolean);
     const match = (name: string | undefined) =>
       !!name && names.some((n) => (n.endsWith("*") ? name.startsWith(n.slice(0, -1)) : name === n));
-    return { ...feed, releases: feed.releases.filter((r) => match(r.package)) };
+    const viewer = new Set(
+      (this.getAttribute("audience") ?? "")
+        .split(/[\s,]+/)
+        .filter(Boolean)
+        .map((a) => a.toLowerCase()),
+    );
+    const allowed = (audience: string[] | undefined) =>
+      !audience?.length || audience.some((a) => viewer.has(a.toLowerCase()));
+    const releases = feed.releases
+      .filter((r) => (names.length ? match(r.package) : true) && allowed(r.audience))
+      .map((r) =>
+        r.entries.some((e) => !allowed(e.audience))
+          ? { ...r, entries: r.entries.filter((e) => allowed(e.audience)) }
+          : r,
+      )
+      .filter((r) => r.entries.length > 0 || r.title || r.summary);
+    return { ...feed, releases };
   }
 
   /** Release headings: h3 under the panel's h2, h2 when inline (override with `heading-level`). */
@@ -220,7 +261,7 @@ export class DerivativeWidget extends Base {
       if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
       this.#feed = parseFeed(await response.json());
       this.#error = false;
-      this.#pickToast();
+      this.#pickHighlight();
       this.#emit("derivative-load", { feed: this.#feed });
     } catch (error) {
       if (abort.signal.aborted) return;
@@ -278,15 +319,42 @@ export class DerivativeWidget extends Base {
     });
   }
 
-  #toastHtml(t: Messages): string {
-    const release = this.#toast;
-    if (!release || this.#open) return "";
-    const summary = release.summary
-      ? `<p class="toast-text">${inlineMarkdown(release.summary.split(/\n\s*\n/)[0] ?? "")}</p>`
+  #highlightHtml(t: Messages): string {
+    const release = this.#highlighted;
+    const kind = this.#highlightKind;
+    if (!release || !kind || this.#open) return "";
+    const shown = localizeRelease(
+      release,
+      this.getAttribute("lang") ?? document.documentElement.lang,
+    );
+    const summary = shown.summary
+      ? kind === "modal"
+        ? `<div class="highlight-text" part="highlight-text">${blockMarkdown(shown.summary)}</div>`
+        : `<p class="highlight-text" part="highlight-text">${inlineMarkdown(shown.summary.split(/\n\s*\n/)[0] ?? "")}</p>`
       : "";
-    return `<div class="toast" part="toast" role="status" data-align="${this.getAttribute("align") === "start" ? "start" : "end"}">
-  <p class="toast-title" part="toast-title"><span class="dv-type">${escapeHtml(t.types.feature)}</span> ${escapeHtml(release.title ?? "")}</p>${summary}
-  <div class="toast-actions"><button class="toast-show" part="toast-action" type="button">${escapeHtml(t.show)}</button><button class="toast-dismiss" part="toast-dismiss" type="button" aria-label="${escapeHtml(t.dismiss)}">×</button></div>
+    const image = shown.media?.find((m) => m.type === "image");
+    const imageUrl = kind === "modal" && image ? safeUrl(image.url) : undefined;
+    const media = imageUrl
+      ? `<img class="dv-image" part="media" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(image?.alt ?? "")}">`
+      : "";
+    const actions = (kind === "modal" ? (shown.links ?? []) : []).flatMap((l) => {
+      const url = safeUrl(l.url);
+      return url
+        ? [
+            `<a class="highlight-link" part="highlight-action" href="${escapeHtml(url)}" rel="noopener">${escapeHtml(l.label)}</a>`,
+          ]
+        : [];
+    });
+    const align = this.getAttribute("align") === "start" ? "start" : "end";
+    const titleId = `${this.#id}-highlight`;
+    const dialog = kind === "modal";
+    return `${dialog ? '<div class="backdrop" part="backdrop"></div>' : ""}<div class="highlight" part="highlight" data-kind="${kind}" data-align="${align}" ${
+      dialog
+        ? `role="dialog" aria-modal="true" aria-labelledby="${titleId}" tabindex="-1"`
+        : 'role="status"'
+    }>
+  <p class="highlight-title" part="highlight-title" id="${titleId}"><span class="dv-type">${escapeHtml(t.types.feature)}</span> ${escapeHtml(shown.title ?? "")}</p>${media}${summary}
+  <div class="highlight-actions">${actions.join("")}<button class="highlight-show" part="highlight-action" type="button">${escapeHtml(t.show)}</button><button class="highlight-dismiss" part="highlight-dismiss" type="button" aria-label="${escapeHtml(t.dismiss)}">×</button></div>
 </div>`;
   }
 
@@ -328,15 +396,73 @@ export class DerivativeWidget extends Base {
   ${this.#open ? this.#searchHtml(t) : ""}
   <div class="list" part="list">${this.#open ? this.#listHtml() : ""}</div>
   ${footer}
-</section>${this.#toastHtml(t)}`;
+</section>${this.#highlightHtml(t)}`;
     root.querySelector(".trigger")?.addEventListener("click", () => this.toggle());
     root.querySelector(".close")?.addEventListener("click", () => this.hide());
-    root.querySelector(".toast-show")?.addEventListener("click", () => this.show());
-    root.querySelector(".toast-dismiss")?.addEventListener("click", () => this.dismissToast());
+    root.querySelector(".highlight-show")?.addEventListener("click", () => this.show());
+    root
+      .querySelector(".highlight-dismiss")
+      ?.addEventListener("click", () => this.dismissHighlight());
+    root.querySelector(".backdrop")?.addEventListener("click", () => this.dismissHighlight());
+    const modal = root.querySelector<HTMLElement>('.highlight[data-kind="modal"]');
+    if (modal) {
+      modal.addEventListener("keydown", this.#onModalKeydown as EventListener);
+      modal.focus();
+    }
     root.querySelector(".panel")?.addEventListener("keydown", this.#onKeydown as EventListener);
     this.#bindSearch();
     this.#renderBadge();
+    this.#syncHints();
     this.#emitRender();
+  }
+
+  #onModalKeydown = (event: KeyboardEvent): void => {
+    if (event.key === "Escape") {
+      event.stopPropagation();
+      this.dismissHighlight();
+      return;
+    }
+    if (event.key !== "Tab") return;
+    const modal = event.currentTarget as HTMLElement;
+    const items = [...modal.querySelectorAll<HTMLElement>("a[href], button")];
+    const first = items[0];
+    const last = items[items.length - 1];
+    if (!first || !last) return;
+    const active = this.#root?.activeElement;
+    if (event.shiftKey && (active === first || active === modal)) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && active === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
+
+  #clearHints(): void {
+    for (const element of this.#hinted) element.removeAttribute("data-derivative-hint");
+    this.#hinted.clear();
+  }
+
+  /** Marks the page elements that unread entries point to (needs the `hints` attribute). */
+  #syncHints(): void {
+    this.#clearHints();
+    const view = this.#view;
+    if (!view || !this.hasAttribute("hints") || typeof document === "undefined") return;
+    for (const release of getUnread(view, this.#store().get())) {
+      for (const entry of release.entries) {
+        if (!entry.target) continue;
+        let found: NodeListOf<Element>;
+        try {
+          found = document.querySelectorAll(entry.target);
+        } catch {
+          continue; // Not a valid selector.
+        }
+        for (const element of found) {
+          element.setAttribute("data-derivative-hint", entry.type);
+          this.#hinted.add(element);
+        }
+      }
+    }
   }
 
   #emitRender(): void {
@@ -442,19 +568,31 @@ code { font-size: .85em; padding: .05em .3em; border-radius: 4px; background: co
 a { color: var(--dv-accent); }
 .all { display: inline-block; margin: .75rem 0 .25rem; font-size: .875rem; }
 .state { color: var(--dv-muted); font-size: .875rem; min-height: 1.5rem; }
-.toast {
+.highlight {
   position: absolute; top: calc(100% + .5rem); z-index: calc(var(--dv-z) - 1); width: min(300px, calc(100vw - 2rem)); box-sizing: border-box;
   background: var(--dv-bg); color: var(--dv-fg); border: 1px solid var(--dv-border); border-inline-start: 3px solid var(--dv-accent);
   border-radius: var(--dv-radius); box-shadow: var(--dv-shadow); padding: .7rem .8rem; font-size: .875rem;
 }
-.toast[data-align="end"] { inset-inline-end: 0; }
-.toast[data-align="start"] { inset-inline-start: 0; }
-.toast-title { margin: 0; font-weight: 600; }
-.toast-text { margin: .3rem 0 0; color: var(--dv-muted); }
-.toast-actions { display: flex; align-items: center; justify-content: space-between; margin-top: .5rem; }
-.toast-show { font: inherit; font-weight: 600; color: var(--dv-accent); background: none; border: 0; padding: .2rem 0; cursor: pointer; }
-.toast-dismiss { font: inherit; font-size: 1.1rem; line-height: 1; color: var(--dv-muted); background: none; border: 0; padding: .2rem .4rem; border-radius: 6px; cursor: pointer; }
-.toast-show:focus-visible, .toast-dismiss:focus-visible { outline: 2px solid var(--dv-accent); outline-offset: 2px; }
-@media (prefers-reduced-motion: no-preference) { .panel:not([hidden]), .toast { animation: dv-in .14s ease-out; } }
+.highlight[data-align="end"] { inset-inline-end: 0; }
+.highlight[data-align="start"] { inset-inline-start: 0; }
+.highlight[data-kind="banner"] { position: fixed; top: 0; inset-inline: 0; width: auto; border-radius: 0; border-width: 0 0 1px; border-inline-start: 0; z-index: var(--dv-z); display: flex; flex-wrap: wrap; align-items: center; gap: .25rem 1rem; padding: .6rem 1rem; }
+.highlight[data-kind="banner"] .highlight-title { flex: 1 1 14rem; }
+.highlight[data-kind="banner"] .highlight-text { flex: 2 1 16rem; margin: 0; }
+.highlight[data-kind="banner"] .highlight-actions { margin: 0; gap: .5rem; }
+.highlight[data-kind="modal"] { position: fixed; inset: 50% auto auto 50%; transform: translate(-50%, -50%); width: min(30rem, calc(100vw - 2rem)); max-height: calc(100vh - 2rem); overflow: auto; z-index: calc(var(--dv-z) + 1); border-inline-start: 1px solid var(--dv-border); padding: 1.25rem; }
+.highlight[data-kind="modal"]:focus-visible { outline: 2px solid var(--dv-accent); outline-offset: 2px; }
+.backdrop { position: fixed; inset: 0; z-index: var(--dv-z); background: rgb(0 0 0 / .45); }
+.highlight-title { margin: 0; font-weight: 600; }
+.highlight[data-kind="modal"] .highlight-title { font-size: 1.05rem; }
+.highlight-text { margin: .3rem 0 0; color: var(--dv-muted); }
+.highlight-text p { margin: .4rem 0 0; }
+.highlight-actions { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-top: .5rem; }
+.highlight-link { margin-inline-end: auto; }
+.highlight-show { font: inherit; font-weight: 600; color: var(--dv-accent); background: none; border: 0; padding: .2rem 0; cursor: pointer; }
+.highlight-dismiss { font: inherit; font-size: 1.1rem; line-height: 1; color: var(--dv-muted); background: none; border: 0; padding: .2rem .4rem; border-radius: 6px; cursor: pointer; }
+.highlight-show:focus-visible, .highlight-dismiss:focus-visible { outline: 2px solid var(--dv-accent); outline-offset: 2px; }
+.dv-links { list-style: none; padding: 0; margin: .6rem 0 0; display: flex; flex-wrap: wrap; gap: .3rem 1rem; font-size: .875rem; }
+.dv-media { display: block; max-width: 100%; border-radius: 6px; margin-top: .6rem; }
+@media (prefers-reduced-motion: no-preference) { .panel:not([hidden]), .highlight:not([data-kind="banner"]):not([data-kind="modal"]) { animation: dv-in .14s ease-out; } }
 @keyframes dv-in { from { opacity: 0; transform: translateY(-4px); } }
 `;

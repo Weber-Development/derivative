@@ -10,7 +10,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <header style={{ display: "flex", justifyContent: "space-between", padding: "1rem" }}>
           <strong>Acme</strong>
           {/* The package is a client component, so it works in a server layout. */}
-          <WhatsNew src="/changelog.json" announce search />
+          <WhatsNew src="/changelog.json" highlight search />
         </header>
         <main style={{ padding: "1rem" }}>{children}</main>
       </body>

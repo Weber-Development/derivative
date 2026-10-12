@@ -13,6 +13,7 @@
         "guides/vue",
         "guides/svelte",
         "guides/examples",
+        "guides/migrating-to-2",
         "guides/upgrading",
         "guides/highlights",
         "guides/ci"

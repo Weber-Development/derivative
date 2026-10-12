@@ -52,6 +52,6 @@ description: Build a feed and add the widget in five minutes.
 
 ## Requirements
 
-- Node.js 20 or newer for the CLI
+- Node.js 22 or newer for the CLI
 - git on the `PATH` for `--source git` and for release dates of Changesets changelogs
 - Any current browser for the widget (custom elements and shadow DOM)

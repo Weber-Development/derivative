@@ -1,3 +1,4 @@
+import { localizeRelease, safeUrl } from "./feed";
 import { formatDate, getMessages, type Messages } from "./i18n";
 import { blockMarkdown, escapeHtml, inlineMarkdown } from "./markdown";
 import type { Feed, Release } from "./types";
@@ -15,7 +16,8 @@ export function renderReleases(releases: Release[], options: RenderOptions = {})
   const t = getMessages(options.lang, options.messages);
   const h = `h${options.headingLevel ?? 2}`;
   return releases
-    .map((release) => {
+    .map((original) => {
+      const release = localizeRelease(original, options.lang);
       const name = release.title ?? (release.version ? release.version : t.unreleased);
       const meta = [
         release.title && release.version ? escapeHtml(release.version) : "",
@@ -42,15 +44,44 @@ export function renderReleases(releases: Release[], options: RenderOptions = {})
         `<article class="dv-release" part="release" id="${escapeHtml(slug(releaseKey(release)))}">`,
         `<${h} class="dv-title" part="release-title">${escapeHtml(name)}</${h}>`,
         meta.length ? `<p class="dv-meta" part="meta">${meta.join(" · ")}</p>` : "",
-        release.image ? `<img class="dv-image" src="${escapeHtml(release.image)}" alt="" />` : "",
+        renderMedia(release),
         release.summary
           ? `<div class="dv-summary" part="summary">${blockMarkdown(release.summary)}</div>`
           : "",
         entries ? `<ul class="dv-entries">${entries}</ul>` : "",
+        renderLinks(release),
         "</article>",
       ].join("");
     })
     .join("");
+}
+
+function renderMedia(release: Release): string {
+  return (release.media ?? [])
+    .flatMap((m) => {
+      const url = safeUrl(m.url);
+      if (!url) return [];
+      return m.type === "video"
+        ? [
+            `<video class="dv-media" part="media" src="${escapeHtml(url)}" controls preload="none"${m.alt ? ` aria-label="${escapeHtml(m.alt)}"` : ""}></video>`,
+          ]
+        : [
+            `<img class="dv-image" part="media" src="${escapeHtml(url)}" alt="${escapeHtml(m.alt ?? "")}" loading="lazy" />`,
+          ];
+    })
+    .join("");
+}
+
+function renderLinks(release: Release): string {
+  const items = (release.links ?? []).flatMap((l) => {
+    const url = safeUrl(l.url);
+    return url
+      ? [
+          `<li><a class="dv-action" part="action" href="${escapeHtml(url)}" rel="noopener">${escapeHtml(l.label)}</a></li>`,
+        ]
+      : [];
+  });
+  return items.length ? `<ul class="dv-links" part="links">${items.join("")}</ul>` : "";
 }
 
 /** A complete, self-contained changelog page. */
@@ -131,7 +162,9 @@ export function renderJsonFeed(
       title: release.title ?? release.version ?? t.unreleased,
       content_html: html,
       ...(release.summary ? { summary: plainSummary(release.summary) } : {}),
-      ...(release.image ? { image: release.image } : {}),
+      ...(release.media?.find((m) => m.type === "image")
+        ? { image: release.media.find((m) => m.type === "image")?.url }
+        : {}),
       ...(release.date ? { date_published: toDateTime(release.date) } : {}),
       ...(release.package ? { tags: [release.package] } : {}),
     };
@@ -175,7 +208,8 @@ main { max-width: 42rem; margin: 0 auto; padding: 3rem 1rem; }
 .dv-release { padding: 1.5rem 0; border-top: 1px solid color-mix(in srgb, CanvasText 15%, transparent); }
 .dv-title { margin: 0; font-size: 1.25rem; }
 .dv-meta { margin: .25rem 0 0; opacity: .7; font-size: .875rem; }
-.dv-image { max-width: 100%; border-radius: 8px; margin-top: 1rem; }
+.dv-image, .dv-media { max-width: 100%; border-radius: 8px; margin-top: 1rem; }
+.dv-links { list-style: none; padding: 0; margin: 1rem 0 0; display: flex; flex-wrap: wrap; gap: .5rem 1rem; font-size: .9375rem; }
 .dv-entries { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; gap: .5rem; }
 .dv-type { display: inline-block; min-width: 5.5rem; font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--accent); }
 .dv-entry[data-type="breaking"] .dv-type, .dv-entry[data-type="security"] .dv-type { color: #c2410c; }

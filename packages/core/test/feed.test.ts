@@ -115,7 +115,7 @@ describe("renderJsonFeed", () => {
     const json = JSON.parse(
       renderJsonFeed(
         {
-          version: 1,
+          version: 2,
           title: "Acme",
           link: "https://acme.ch/changelog",
           releases: [

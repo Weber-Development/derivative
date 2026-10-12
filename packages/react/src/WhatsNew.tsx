@@ -19,8 +19,12 @@ export interface WhatsNewProps {
   theme?: "light" | "dark";
   /** Show only these entry types, e.g. `["feature", "fix"]`. */
   types?: EntryType[];
-  /** Show a toast once when a new release with a title arrives. */
-  announce?: boolean;
+  /** Announce the newest unread release with a title once: `true` or `"toast"`, `"banner"` or `"modal"`. Releases marked `importance: "major"` come first. */
+  highlight?: boolean | "toast" | "banner" | "modal";
+  /** Audiences of the reader. Entries and releases with an audience are hidden from everyone else. */
+  audience?: string[];
+  /** Mark page elements named by an entry's `target` with `data-derivative-hint` while it is unread. */
+  hints?: boolean;
   /** Add a search field to the panel. */
   search?: boolean;
   /** Monorepo feeds: show only these packages. A trailing `*` matches a prefix. */
@@ -77,7 +81,15 @@ export function WhatsNew(props: WhatsNewProps) {
       align={props.align}
       theme={props.theme}
       types={props.types?.join(",")}
-      announce={props.announce ? "" : undefined}
+      highlight={
+        props.highlight === undefined || props.highlight === false
+          ? undefined
+          : props.highlight === true
+            ? ""
+            : props.highlight
+      }
+      audience={props.audience?.join(",")}
+      hints={props.hints ? "" : undefined}
       search={props.search ? "" : undefined}
       package={props.packages?.join(",")}
       heading-level={props.headingLevel === undefined ? undefined : String(props.headingLevel)}
@@ -105,7 +117,9 @@ declare module "react" {
         align?: string;
         theme?: string;
         types?: string;
-        announce?: string;
+        highlight?: string;
+        audience?: string;
+        hints?: string;
         search?: string;
         package?: string;
       };

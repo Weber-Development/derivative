@@ -49,7 +49,7 @@ afterEach(() => {
 
 describe("accessibility (axe)", () => {
   it("closed popover has no violations", async () => {
-    mount({ announce: "", lang: "de" });
+    mount({ highlight: "", lang: "de" });
     expect(await violations()).toEqual([]);
   });
 
@@ -64,9 +64,9 @@ describe("accessibility (axe)", () => {
   });
 
   it("toast has no violations", async () => {
-    mount({ announce: "" });
+    mount({ highlight: "" });
     expect(
-      document.querySelector("derivative-widget")?.shadowRoot?.querySelector(".toast"),
+      document.querySelector("derivative-widget")?.shadowRoot?.querySelector(".highlight"),
     ).not.toBeNull();
     expect(await violations()).toEqual([]);
   });

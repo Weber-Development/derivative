@@ -12,11 +12,11 @@ import { WhatsNew } from "@sweberdev/derivative-vue";
 </script>
 
 <template>
-  <WhatsNew src="/changelog.json" lang="de" announce search @read="(id) => console.log(id)" />
+  <WhatsNew src="/changelog.json" lang="de" highlight search @read="(id) => console.log(id)" />
 </template>
 ```
 
-Props match the widget attributes in camelCase (`storageKey`), with `types` as an array and `announce` and `search` as booleans, plus `feed`, `messages` and an `icon` slot. Events: `open` and `read`. In Nuxt, wrap it in `<ClientOnly>`.
+Props match the widget attributes in camelCase (`storageKey`), with `types` as an array and `search` and `hints` as booleans, `highlight` as `true`, `"toast"`, `"banner"` or `"modal"`, `audience` as an array, plus `feed`, `messages` and an `icon` slot. Events: `open` and `read`. In Nuxt, wrap it in `<ClientOnly>`.
 
 `useChangelog({ src })` returns refs `status`, `feed`, `releases`, `unread`, `error` and a `markAllRead()` function for building your own UI.
 

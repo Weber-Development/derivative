@@ -15,8 +15,14 @@ Runs in browsers and Node.
 | `parseCommits(commits, options?)` | Releases from conventional commits with tags |
 | `parseGitHubReleases(releases, options?)` | Releases from the GitHub Releases API response |
 | `parseGitLabReleases(releases, options?)` | Releases from the GitLab Releases API response |
-| `createFeed(releases, options?)` | Sorts, merges, applies highlights and limit |
-| `parseFeed(json)` | Validates untrusted JSON |
+| `createFeed(releases, options?)` | Sorts, merges, applies highlights and limit. Writes format 2; `{ format: 1 }` writes the old format |
+| `parseFeed(json)` | Validates untrusted JSON. Reads format 1 and 2 and returns format 2 |
+| `toFeedV1(feed)` | Converts a feed to the format 1.x widgets read |
+| `localizeRelease(release, lang)` | The release with title, summary and entry texts from its `translations` |
+| `parseLinearCycles(cycles, options?)` (beta) | Releases from Linear cycles, plus `LINEAR_CYCLES_QUERY` |
+| `parseJiraVersions(versions, options?)` (beta) | Releases from Jira versions and their issues |
+| `parseNotionPages(pages, options?)` (beta) | Releases from the pages of a Notion database |
+| `DEFAULT_TRACKER_TYPES`, `DEFAULT_EXCLUDED_LABELS` | Label and issue type → entry type mapping, and labels that keep an issue out |
 | `sortReleases(releases)` | Newest first, by version and date |
 | `getUnread(feed, lastSeen, options?)` | Releases the reader hasn't seen |
 | `latestKey(feed)`, `releaseKey(release)` | Keys stored as "last seen" |
@@ -43,6 +49,7 @@ Types: `Feed`, `Release`, `Entry`, `EntryType`, `Highlights`, `Locale`, `Message
 | `readTagDate(version, package?, cwd?)` | Date of a release tag |
 | `readGitHubReleases(repo, options?)` | Published releases from the GitHub API, newest first |
 | `readGitLabReleases(project, options?)` | Releases from GitLab, including self-managed instances |
+| `readLinearCycles(team, options?)`, `readJiraVersions(site, project, options?)`, `readNotionPages(database, options?)` (beta) | Read-only access to the trackers, with tokens from the environment |
 | `matchesPackage(name, patterns)` | The package filter of `--package`: exact names and trailing `*` |
 | `loadConfig(path)` | Reads `derivative.config.json` |
 | `init(cwd?, { scripts? })`, `detectConfig(cwd)` | Same as `derivative init` |

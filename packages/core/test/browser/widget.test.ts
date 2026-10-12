@@ -160,7 +160,7 @@ describe("widget in Chromium", () => {
   it.each(["light", "dark"] as const)(
     "has sufficient colour contrast in %s mode",
     async (scheme) => {
-      const p = await open(`/contrast-${scheme}`, page(`search announce`), {
+      const p = await open(`/contrast-${scheme}`, page(`search highlight`), {
         colorScheme: scheme,
         reducedMotion: "reduce",
       });
@@ -254,16 +254,72 @@ derivative-widget::part(release-title){letter-spacing:5px}</style></head>`,
     await p.context().close();
   });
 
-  it("keeps the announcement toast inside the viewport on right-to-left pages", async () => {
-    const p = await open("/rtl-toast", page("announce", "rtl"), {
+  it("keeps the highlight toast inside the viewport on right-to-left pages", async () => {
+    const p = await open("/rtl-toast", page("highlight", "rtl"), {
       viewport: { width: 400, height: 700 },
     });
-    const toast = p.locator("derivative-widget >> .toast");
+    const toast = p.locator("derivative-widget >> .highlight");
     await toast.waitFor();
     await p.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)));
     const box = await toast.boundingBox();
     expect(box?.x ?? -1).toBeGreaterThanOrEqual(0);
     expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(400);
+    await p.context().close();
+  });
+
+  it.each(["toast", "banner", "modal"] as const)(
+    "has sufficient contrast for the %s highlight in dark and light mode",
+    async (kind) => {
+      for (const scheme of ["light", "dark"] as const) {
+        const p = await open(`/hl-${kind}-${scheme}`, page(`highlight="${kind}"`), {
+          colorScheme: scheme,
+          reducedMotion: "reduce",
+        });
+        await p.locator("derivative-widget >> .highlight").waitFor();
+        expect(await contrast(p)).toEqual([]);
+        await p.context().close();
+      }
+    },
+  );
+
+  it("keeps the modal inside a phone viewport, traps Tab and returns focus on Escape", async () => {
+    const p = await open("/modal", page(`highlight="modal"`), {
+      viewport: { width: 360, height: 640 },
+      reducedMotion: "reduce",
+    });
+    const modal = p.locator("derivative-widget >> .highlight");
+    await modal.waitFor();
+    const box = await modal.boundingBox();
+    expect(box?.x ?? -1).toBeGreaterThanOrEqual(0);
+    expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(360);
+    expect(box?.y ?? -1).toBeGreaterThanOrEqual(0);
+    expect((box?.y ?? 0) + (box?.height ?? 0)).toBeLessThanOrEqual(640);
+    for (let i = 0; i < 6; i++) await p.keyboard.press("Tab");
+    const inside = await p.evaluate(() => {
+      const root = document.querySelector("derivative-widget")?.shadowRoot;
+      return !!root?.activeElement?.closest(".highlight");
+    });
+    expect(inside).toBe(true);
+    await p.keyboard.press("Escape");
+    await modal.waitFor({ state: "detached" });
+    const focused = await p.evaluate(
+      () => document.querySelector("derivative-widget")?.shadowRoot?.activeElement?.className,
+    );
+    expect(focused).toContain("trigger");
+    await p.context().close();
+  });
+
+  it("spans the viewport with a banner and keeps it right-to-left safe", async () => {
+    const p = await open("/banner", page(`highlight="banner"`, "rtl"), {
+      viewport: { width: 400, height: 700 },
+      reducedMotion: "reduce",
+    });
+    const banner = p.locator("derivative-widget >> .highlight");
+    await banner.waitFor();
+    const box = await banner.boundingBox();
+    expect(box?.x ?? -1).toBeGreaterThanOrEqual(0);
+    expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(400);
+    expect(box?.width ?? 0).toBeGreaterThan(390);
     await p.context().close();
   });
 });

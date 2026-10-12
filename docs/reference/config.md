@@ -27,8 +27,12 @@ description: derivative.config.json and CLI options.
 
 | Key | CLI | Default | Meaning |
 |---|---|---|---|
-| `source` | `--source` | `changelog` if the file exists, else `github` if `repo` is set, else `gitlab` if `project` is set, else `git` | Where releases come from |
+| `source` | `--source` (`changelog`, `git`, `github`, `gitlab`, `linear`, `jira`, `notion`) | `changelog` if the file exists, else `github` if `repo` is set, else `gitlab` if `project` is set, else `git` | Where releases come from |
+| `feedFormat` | `--feed-format` | `2` | Format of `changelog.json`; `1` for widgets still on 1.x |
 | `repo` | `--repo` | | github: `owner/name`, uses `GITHUB_TOKEN` when set |
+| `linear` | | | linear (beta): `{ "team": "ENG" }` plus optional `types`, `excludeLabels`, `fallback`. Uses `LINEAR_API_KEY` |
+| `jira` | | | jira (beta): `{ "url": "https://acme.atlassian.net", "project": "ACME" }` plus the same options and `includeUnreleased`. Uses `JIRA_EMAIL` and `JIRA_API_TOKEN` |
+| `notion` | | | notion (beta): `{ "database": "<id>" }` plus `properties` (names of the columns) and the same options. Uses `NOTION_TOKEN` |
 | `project` | `--project` | | gitlab: project path (`group/name`) or numeric id, uses `GITLAB_TOKEN` when set |
 | `gitlabUrl` | `--gitlab-url` | `https://gitlab.com` | gitlab: base URL of a self-managed instance |
 | `includePrereleases` | `--prereleases` | `false` | github, gitlab: keep pre-releases (GitLab: upcoming releases) |

@@ -19,12 +19,12 @@ import { WhatsNew } from "@sweberdev/derivative-vue";
 <template>
   <header>
     <Logo />
-    <WhatsNew src="/changelog.json" lang="de" announce search @open="track('whats-new-open')" />
+    <WhatsNew src="/changelog.json" lang="de" highlight search @open="track('whats-new-open')" />
   </header>
 </template>
 ```
 
-Props match the [widget attributes](widget.md) in camelCase (`storageKey`), with `types` and `packages` as arrays (`:types="['feature', 'fix']"`), `headingLevel` as a number and `announce` and `search` as booleans, plus `feed` and `messages`. Put your own icon in the `icon` slot. Events are `open` and `read` (with the id of the newest release the reader has now seen).
+Props match the [widget attributes](widget.md) in camelCase (`storageKey`), with `types` and `packages` as arrays (`:types="['feature', 'fix']"`), `headingLevel` as a number and `search` and `hints` as booleans, `highlight` as `true`, `"toast"`, `"banner"` or `"modal"`, `audience` as an array, plus `feed` and `messages`. Put your own icon in the `icon` slot. Events are `open` and `read` (with the id of the newest release the reader has now seen).
 
 The component registers the custom element when it mounts, so it renders nothing on the server and the button appears after hydration. In Nuxt, wrap it in `<ClientOnly>` to avoid a hydration warning.
 

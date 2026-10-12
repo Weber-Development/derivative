@@ -103,7 +103,7 @@ describe("<derivative-widget>", () => {
   });
 });
 
-describe("types and announce", () => {
+describe("types and highlight", () => {
   const titled: Feed = createFeed(
     [
       {
@@ -140,36 +140,36 @@ describe("types and announce", () => {
 
   it("announces a new titled release once", () => {
     const announced = vi.fn();
-    const el = mount({ announce: "", lang: "de" });
-    el.addEventListener("derivative-announce", announced);
+    const el = mount({ highlight: "", lang: "de" });
+    el.addEventListener("derivative-highlight", announced);
     el.feed = titled;
-    const toast = shadow(el).querySelector(".toast") as HTMLElement;
+    const toast = shadow(el).querySelector(".highlight") as HTMLElement;
     expect(toast.textContent).toContain("Dark mode is here");
     expect(toast.innerHTML).toContain("<strong>settings</strong>");
     expect(announced).toHaveBeenCalledOnce();
 
-    (shadow(el).querySelector(".toast-dismiss") as HTMLButtonElement).click();
-    expect(shadow(el).querySelector(".toast")).toBeNull();
+    (shadow(el).querySelector(".highlight-dismiss") as HTMLButtonElement).click();
+    expect(shadow(el).querySelector(".highlight")).toBeNull();
     // The badge stays: dismissing is not reading.
     expect((shadow(el).querySelector(".badge") as HTMLElement).hidden).toBe(false);
 
-    const again = mount({ announce: "" });
+    const again = mount({ highlight: "" });
     again.feed = titled;
-    expect(shadow(again).querySelector(".toast")).toBeNull();
+    expect(shadow(again).querySelector(".highlight")).toBeNull();
   });
 
   it("opens the panel from the toast", () => {
-    const el = mount({ announce: "" });
+    const el = mount({ highlight: "" });
     el.feed = titled;
-    (shadow(el).querySelector(".toast-show") as HTMLButtonElement).click();
+    (shadow(el).querySelector(".highlight-show") as HTMLButtonElement).click();
     expect(el.open).toBe(true);
-    expect(shadow(el).querySelector(".toast")).toBeNull();
+    expect(shadow(el).querySelector(".highlight")).toBeNull();
   });
 
   it("does not announce without the attribute", () => {
     const el = mount();
     el.feed = titled;
-    expect(shadow(el).querySelector(".toast")).toBeNull();
+    expect(shadow(el).querySelector(".highlight")).toBeNull();
   });
 });
 

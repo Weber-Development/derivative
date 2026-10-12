@@ -18,7 +18,7 @@ pnpm add @sweberdev/derivative
 
 <header>
   <a href="/">Acme</a>
-  <derivative-widget src="/changelog.json" lang="de" announce search></derivative-widget>
+  <derivative-widget src="/changelog.json" lang="de" highlight search></derivative-widget>
 </header>
 ```
 
@@ -66,7 +66,9 @@ declare module "svelte/elements" {
       align?: "start" | "end";
       theme?: "light" | "dark";
       types?: string;
-      announce?: boolean;
+      highlight?: string;
+      audience?: string;
+      hints?: boolean;
       search?: boolean;
       "bind:this"?: DerivativeWidget | undefined;
     };

@@ -60,6 +60,20 @@ describe("ChangelogList", () => {
   });
 });
 
+describe("WhatsNew attributes", () => {
+  it("passes highlight, audience and hints to the element", () => {
+    const { container } = render(
+      <WhatsNew feed={feed} highlight="banner" audience={["pro", "beta"]} hints />,
+    );
+    const el = container.querySelector("derivative-widget");
+    expect(el?.getAttribute("highlight")).toBe("banner");
+    expect(el?.getAttribute("audience")).toBe("pro,beta");
+    expect(el?.hasAttribute("hints")).toBe(true);
+    const plain = render(<WhatsNew feed={feed} highlight />);
+    expect(plain.container.querySelector("derivative-widget")?.getAttribute("highlight")).toBe("");
+  });
+});
+
 describe("WhatsNew", () => {
   it("renders the web component with a feed", async () => {
     const onRead = vi.fn();

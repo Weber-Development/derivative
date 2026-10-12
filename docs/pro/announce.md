@@ -17,7 +17,7 @@ npx derivative-announce digest --feed public/changelog.json --product "Acme" \
 ```
 
 This writes `digest.html` and `digest.txt` and prints the subject line. The layout uses tables and
-inline styles, so it renders in Outlook and Gmail. Sending is up to you: hand the files to
+inline styles, so it renders in Outlook and Gmail. A release with an image (feed format 2) shows its first image, and its links appear as call-to-action links; with `--lang` the digest uses the translations in the feed. Sending is up to you: hand the files to
 Postmark, Resend, SES or your newsletter tool.
 
 ## Chat

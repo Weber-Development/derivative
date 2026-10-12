@@ -16,6 +16,10 @@ Add a marker at the end of an entry in your changelog:
 
 The marker is removed from the text. Entries without a marker are visible to everyone.
 
+Feed [format 2](../reference/feed.md) carries audiences natively: set `audience` on an entry or a
+whole release in the feed itself (for example from a [tracker label](../guides/sources.md), `audience:pro`).
+It is combined with the markers and rules below; case does not matter.
+
 ## Rules
 
 Rules apply audiences without touching the changelog. Every matching rule adds its audiences.
@@ -90,6 +94,49 @@ In code, `translateFeed(feed, { to, translator, cache, keep })` returns the tran
 `stats` (`translated`, `cached`, `fallback`, `characters`). The translators are `deeplTranslator`,
 `openAiTranslator` and `anthropicTranslator`; a translator is one function, so another provider is
 a few lines. Your texts go to the provider you choose, under your account and its terms.
+
+### Translations inside the feed
+
+With `--embed` the languages go into one feed instead of one file per language. Each release gets
+`translations.<lang>` (title, summary, entry texts) and entries get stable ids. The widget and the
+e-mail digest pick the reader's language and fall back to the source text; nothing else changes.
+
+```sh
+npx derivative-segments translate --feed public/changelog.json --to de,fr --provider deepl --embed
+```
+
+Details are not sent in embed mode; running again with more languages adds them.
+
+## Drafts and approval
+
+Review release notes like code. A draft is one JSON file per release in `changelog/drafts/`, with a
+`status` of `draft`, `review` or `approved` (which needs `approvedBy`) and an optional `publishAt`:
+
+```sh
+npx derivative-segments drafts new 2.5.0      # writes changelog/drafts/2.5.0.json
+npx derivative-segments drafts check          # use it in CI: errors exit with 1
+npx derivative-segments drafts publish --feed public/changelog.json
+```
+
+`publish` adds every approved draft whose time has come to the feed and leaves the rest out, so a
+draft is invisible until a pull request sets `approved` and branch protection lets it through. In
+code: `checkDrafts(files)` and `applyDrafts(feed, drafts)`.
+
+## AI-written drafts
+
+`draft` writes a first version of the notes from your commits or a list of changes, with your own
+provider key (`DERIVATIVE_DRAFT_KEY`), using OpenAI-compatible endpoints or Anthropic:
+
+```sh
+npx derivative-segments draft --id 2.5.0 --provider anthropic --model claude-haiku-4-5-20251001 --from-git v2.4.0..HEAD
+```
+
+The result is always a `draft` marked `generated`, never published by itself; `drafts check`
+rejects a generated draft that a person has not approved. Commit messages and ticket texts are sent
+to the provider you choose, so check that this is allowed for your project. The model gets them as
+data, its answer must match a fixed schema, every entry must cite a real change, links come only
+from your input, and HTML or links it writes are removed. It is still a language model: read every
+line. `--dry-run` shows what would be sent.
 
 ## Feature flags
 

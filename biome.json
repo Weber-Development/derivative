@@ -14,7 +14,8 @@
       "!**/test/fixtures",
       "!examples/**/*.svelte",
       "!examples/**/*.astro",
-      "!**/.svelte-kit"
+      "!**/.svelte-kit",
+      "!.changeset/pre.json"
     ]
   },
   "formatter": {

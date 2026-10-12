@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 
 const feed = JSON.parse(readFileSync("out/changelog.json", "utf8"));
-if (feed.version !== 1 || feed.releases.length !== 2)
+if (feed.version !== 2 || feed.releases.length !== 2)
   throw new Error("changelog.json has the wrong shape");
 if (!readFileSync("out/atom.xml", "utf8").includes("<feed"))
   throw new Error("atom.xml is not Atom");

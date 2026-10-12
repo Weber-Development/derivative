@@ -35,6 +35,11 @@ need("core", core, [
   "versionFromTag",
   "DEFAULT_COMMIT_TYPES",
   "ENTRY_TYPES",
+  "toFeedV1",
+  "localizeRelease",
+  "parseLinearCycles",
+  "parseJiraVersions",
+  "parseNotionPages",
 ]);
 need("node", node, [
   "buildFeed",
@@ -43,6 +48,9 @@ need("node", node, [
   "readTagDate",
   "readGitHubReleases",
   "readGitLabReleases",
+  "readLinearCycles",
+  "readJiraVersions",
+  "readNotionPages",
   "matchesPackage",
   "loadConfig",
   "init",
@@ -56,6 +64,7 @@ need("vue", vue, ["WhatsNew", "useChangelog"]);
 const feed = core.createFeed(core.parseChangelog("## 1.0.0\n\n### Minor Changes\n\n- Hello\n"), {
   generatedAt: null,
 });
+if (feed.version !== 2) throw new Error("createFeed does not write format 2");
 if (feed.releases[0]?.entries[0]?.text !== "Hello")
   throw new Error("parseChangelog + createFeed broke");
 if (!core.renderAtom(feed, { url: "https://x.example/atom.xml" }).includes("<feed"))

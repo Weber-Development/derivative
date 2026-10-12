@@ -1,0 +1,10 @@
+{
+  "mode": "pre",
+  "tag": "next",
+  "initialVersions": {
+    "@sweberdev/derivative": "1.0.0",
+    "@sweberdev/derivative-react": "1.0.0",
+    "@sweberdev/derivative-vue": "1.0.0"
+  },
+  "changesets": []
+}

@@ -51,6 +51,45 @@ The bar uses the widget's `derivative-render` event, so it needs `@sweberdev/der
 later. Its look follows the widget's CSS variables, and the wrapper has `part="reactions"` for your own
 styles.
 
+## Reactions and comments
+
+Besides the helpful vote, readers can react with an emoji and leave a comment on a release. Both
+are stored in your own database and shown in a disclosure under the release, which loads only when
+a reader opens it.
+
+```ts
+// app/api/comments/route.ts
+import { createCommentsHandler, sqlCommentStore } from "@weber-development/derivative-insights";
+
+const store = sqlCommentStore(query, { dialect: "postgres" }); // run store.setup() once
+const handler = createCommentsHandler({ store, allow: yourRateLimiter });
+export const GET = handler;
+export const POST = handler;
+```
+
+```ts
+import { addComments } from "@weber-development/derivative-insights";
+addComments(document, { endpoint: "/api/comments" }); // comments: false for reactions only
+```
+
+- **Plain text.** Comments are stored as typed and shown as text, never as HTML.
+- **Pre-moderation.** A new comment stays hidden until you approve it. `moderation: "post"` publishes at
+  once and lets you reject afterwards.
+- **Moderation.** `createModerationHandler({ store, authorize: bearerAuth(token) })` lists comments
+  (`GET ?status=pending`) and decides them (`POST {id, action: "approve" | "reject" | "delete"}`). It is never
+  cached; put it behind your own login.
+- **Spam.** A hidden `website` field catches simple bots. The library stores no IP address, so it
+  cannot limit requests by itself: pass `allow` (return `false` for a 429) and `isSpam` to plug in your
+  own rate limit or filter.
+- **Emojis.** 👍 🎉 ❤️ 🤔 by default (`emojis` changes the set); a browser's own choice is remembered in
+  `localStorage` so a changed mind moves the count instead of adding one.
+- **Stores.** `memoryCommentStore` for tests, `sqlCommentStore(query, { dialect })` for Postgres or
+  SQLite (two tables, `commentsSetupSql` prints the statements).
+
+Comments are personal data that readers type in. You are the controller: mention them in your privacy
+notice, delete a comment when its author asks, and keep the form's reminder not to enter data
+that should stay private. Reactions carry no identifier.
+
 ## Receive
 
 ```ts

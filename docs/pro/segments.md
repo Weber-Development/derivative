@@ -122,6 +122,35 @@ npx derivative-segments drafts publish --feed public/changelog.json
 draft is invisible until a pull request sets `approved` and branch protection lets it through. In
 code: `checkDrafts(files)` and `applyDrafts(feed, drafts)`.
 
+## Import from Linear, Jira and Notion
+
+Pull release notes from your tracker and review them as drafts. The import only reads and needs
+a read-only token in the environment:
+
+```sh
+export LINEAR_API_KEY=...
+npx derivative-segments import --source linear --team ENG --since 2026-01-01
+# Jira: JIRA_EMAIL and JIRA_API_TOKEN
+npx derivative-segments import --source jira --url https://acme.atlassian.net --project WEB
+# Notion: NOTION_TOKEN
+npx derivative-segments import --source notion --database <id> --props published=Live
+```
+
+A Linear cycle, a Jira version (its issues with that fix version) or a Notion version (pages grouped by
+the `Version` property) becomes one draft with a linked entry per issue. Labels or issue types decide
+the entry type, with `--map bug=fix,story=feature` for your own names; `audience:pro` labels set an
+audience, and issues labelled `internal`, `no-changelog` or `skip-changelog` stay out (`--exclude`
+changes the list). Compared with the free readers, the import reads every page of cycles, issues,
+versions and pages, repeats requests on rate limits (`Retry-After` is honoured), server errors and
+network failures (`--attempts`, default 4), and stops a hanging request after 20 seconds.
+
+A draft that is already in `review` or `approved` is never overwritten, so you can run the import
+again whenever the tracker changes; a draft still in `draft` is refreshed. `--dry-run` shows what
+would be written. In code: `importLinear`, `importJira`, `importNotion` and `importToDrafts`.
+
+This is **beta**: it is tested against mock servers of the documented APIs (including pagination,
+rate limits and errors), not yet against live accounts. Read the drafts before you approve them.
+
 ## AI-written drafts
 
 `draft` writes a first version of the notes from your commits or a list of changes, with your own

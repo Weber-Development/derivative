@@ -92,7 +92,7 @@ npx derivative build --exclude-package "@acme/internal-*"
 
 ## Linear, Jira and Notion (beta)
 
-If product and support write down what shipped in a tracker, Derivative can read it. These sources only read, use a token that you create and keep in the environment, and never write back. They are **beta**: tested against fixtures of the documented API responses, not yet against live accounts. Try them with a read-only token and look at the result before you publish.
+If product and support write down what shipped in a tracker, Derivative can read it. These sources only read, use a token that you create and keep in the environment, and never write back. They are **beta**: tested against fixtures of the documented API responses, not yet against live accounts. Try them with a read-only token and look at the result before you publish. These readers fetch the first 100 issues of a cycle, 20 Jira versions and 300 Notion pages, with no retry; [Derivative Pro](../pro/segments.md) reads everything, retries on rate limits and writes the result as drafts for review.
 
 All three decide the entry type from labels or the issue type (case-insensitive): `feature`, `new feature`, `story` → New; `improvement`, `enhancement`, `task` → Improved; `bug`, `fix`, `defect` → Fixed; `security`; `breaking`; `deprecation`; `removal`. Everything else becomes Improved. Add or change mappings with `types` and the fallback with `fallback`. Tickets labelled `internal`, `no-changelog` or `skip-changelog` stay out (change the list with `excludeLabels`). A label `audience:pro` sets the entry's audience, which the widget's `audience` attribute uses.
 

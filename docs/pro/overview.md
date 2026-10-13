@@ -8,8 +8,8 @@ infrastructure and send nothing to us.
 
 | Package | What it does |
 |---|---|
-| [`derivative-insights`](/derivative/docs/pro/insights) | Shows how often the panel is opened, which releases are read and which links are clicked. Readers can vote whether a release helped. No cookies, no visitor IDs. |
-| [`derivative-segments`](/derivative/docs/pro/segments) | Shows entries only to certain plans or roles, publishes releases on a schedule, translates the feed, and reviews drafts (also AI-written ones) before they go live. |
+| [`derivative-insights`](/derivative/docs/pro/insights) | Shows how often the panel is opened, which releases are read and which links are clicked. Readers can vote whether a release helped, react with an emoji and leave comments you moderate. No cookies, no visitor IDs. |
+| [`derivative-segments`](/derivative/docs/pro/segments) | Shows entries only to certain plans or roles, publishes releases on a schedule, translates the feed, reviews drafts (also AI-written ones) before they go live, and imports releases from Linear, Jira and Notion as drafts. |
 | [`derivative-announce`](/derivative/docs/pro/announce) | Sends an e-mail digest to a subscriber list with double opt-in (Resend, Postmark, Amazon SES or SMTP) and posts releases to Slack, Teams, Discord, Mattermost, Google Chat, Mastodon, Bluesky or LinkedIn. |
 
 The packages read the same `changelog.json` the free CLI writes. They read feed format 2 (and still format 1) and do not depend on

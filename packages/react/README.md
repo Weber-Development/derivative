@@ -39,3 +39,14 @@ Releases run through Changesets: add a changeset with `pnpm changeset`, merge th
 ## License
 
 MIT
+
+<!-- pro-promo -->
+## Derivative Pro
+
+Need more than the free package? **Derivative Pro** adds:
+
+- Insights: opens, reads, link clicks and a helpful / not helpful vote per release, on your own endpoint
+- Segments: entries per plan or role, scheduled releases, translations, drafts with approval
+- Announce: double opt-in subscriber list, e-mail digests, and posts to Slack, Teams, Discord, Mastodon, Bluesky and more
+
+Subscriptions from CHF 12 per month, or a one-time lifetime licence. [See what is included](https://packages.sweber.dev/derivative?utm_source=npm&utm_medium=readme&utm_campaign=pro)
